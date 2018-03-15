@@ -10,9 +10,26 @@ import matplotlib.cm as cm
 ################################
 #    SETTING UP ENVIRONMENT    #
 ##########################################################################
-diffusivities = np.arange(50, 1001, 50)  # analyzed diffusivity values
-path_d_data = "/Users/AmanuelWK/Desktop/Block_DSol/"
+diffusivities = np.arange(100, 1001, 100)  # analyzed diffusivity values
+path_d_data = "/Users/woldeaman/Desktop/Block_reflective_DSolFix/"
 path_profiles = "./"  # in same folder
+##########################################################################
+
+
+###################
+#    FUNCTIONS    #
+##########################################################################
+def plot_error(d, error, save_path='/Users/woldeaman/Desktop/'):
+    """
+    Make plots for error over different diffusivities
+    """
+
+    plt.figure()
+    plt.plot(d, error, 'ko')
+    plt.axhline(y=error[-1], ls=':', c='k')
+    plt.xlabel('D$_{bulk}$ [µm$^{2}$/s]')
+    plt.ylabel('Minimal Error $\sigma$')
+    plt.savefig('%s/error_DSol.pdf' % save_path, bbox_inches='tight')
 ##########################################################################
 
 
@@ -20,9 +37,11 @@ path_profiles = "./"  # in same folder
 #             MAIN LOOP         #
 ##########################################################################
 # read errors for different d values
-error_data = [np.loadtxt("%s/results_DSol=%.2f/minError.txt" % (path_d_data, d))
+error_data = [np.loadtxt("%s/DSol=%i/results_DSol=%.2f/minError.txt" % (path_d_data, d, d))
               for d in diffusivities]
 min_error = [np.min(e) for e in error_data]  # gather min errors
+plot_error(diffusivities, min_error)
+
 
 # estimate experimental error
 profiles_data = np.loadtxt("%s/truncated_d.txt" % path_profiles)  # read profiles
