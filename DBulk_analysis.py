@@ -1,20 +1,51 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-import scipy.interpolate as ip
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import mpltex  # for acs style figures
+
 
 # script estimates experimental error and compares it to error for different
 # diffusivity values in bulk
+#################################
+#  DEFINITIONS AND FUNCTIONS    #
+##########################################################################
+@mpltex.acs_decorator  # making acs-style figures
+def figure_diffusivities(d_sol, d_gel, f_gel, error, name='params_dsol',
+                         save=False):
+    """
+    Plots other parameters change with d_sol.
+    """
+
+    fig, axes = plt.subplots(3, 1, sharex='col')
+    axes[0].plot(d_sol, error, 'ko')
+    axes[0].axhline(error[-1], c='k', ls=':')
+    axes[0].set(ylabel="Minimal error $\sigma$")
+    axes[1].plot(d_sol, d_gel, 'ro')
+    axes[1].axhline(np.average(d_gel), ls=':', c='r')
+    axes[1].set(ylabel="D$_{gel}$ [$\mu$m$^2$/s]")
+    axes[2].plot(d_sol, f_gel, 'bo')
+    axes[2].axhline(np.average(f_gel), ls=':', c='b')
+    axes[2].set(xlabel="D$_{bulk}$ [$\mu$m$^2$/s]",
+                ylabel="$\Delta$F$_{gel}$ [k$_B$T]")
+
+    width, height = fig.get_size_inches()
+    fig.set_size_inches(width, height*1.5)  # double height because of two rows
+
+    if save:
+        plt.savefig("/Users/AmanuelWK/Desktop/%s.pdf" % name, bbox_inches='tight')
+    else:
+        plt.show()
+##########################################################################
+
 
 ################################
 #    SETTING UP ENVIRONMENT    #
 ##########################################################################
 diffusivities = np.arange(50, 1001, 50)  # analyzed diffusivity values
-path_d_data = "/Users/AmanuelWK/Desktop/Block_DSol/"
+path_d_data = "/Users/AmanuelWK/Desktop/BlockResults/computed_data/c0_const_bulkNormalized/varying_DSol/"
 path_profiles = "./"  # in same folder
 ##########################################################################
-
 
 #################################
 #             MAIN LOOP         #
@@ -23,24 +54,10 @@ path_profiles = "./"  # in same folder
 error_data = [np.loadtxt("%s/results_DSol=%.2f/minError.txt" % (path_d_data, d))
               for d in diffusivities]
 min_error = [np.min(e) for e in error_data]  # gather min errors
+df_values = [np.loadtxt("%s/results_DSol=%.2f/DF_best.txt"
+                        % (path_d_data, d), delimiter=',') for d in diffusivities]
+d_sol = [d[0, 1] for d in df_values]
+d_gel, f_gel = [d[-1, 1] for d in df_values], [d[-1, 2] for d in df_values]
 
-# estimate experimental error
-profiles_data = np.loadtxt("%s/truncated_d.txt" % path_profiles)  # read profiles
-xx, cc = profiles_data[:, 0], profiles_data[:, 1:]
-# TODO: think about a way to estimate experimental error
-# # first fit smoothing splines to all data points
-# splines = [ip.UnivariateSpline(xx, c, s=.01) for c in cc.T]
-# residuals = [s.get_residual() for s in splines]
-# error_spline = np.sqrt(np.sum([r for r in residuals])/cc.size)
-# pre_error_bulk = [(c[:15] - c[0])**2/c[:15].size for c in cc.T]
-# error_bulk = np.sqrt(np.sum(pre_error_bulk)/cc[0, :].size)
-
-
-colors = [cm.jet(x) for x in np.linspace(0, 1, cc[0, :].size)]
-xx_lin = np.linspace(xx[0], xx[-1])
-for c, s, col in zip(cc.T, splines, colors):
-    plt.plot(xx, c, ".", c=col)
-    plt.plot(xx_lin, s(xx_lin), '-', c=col)
-plt.axvline(xx[15], ls='--', c='k')
-plt.savefig("/Users/AmanuelWK/Desktop/test.pdf")
+figure_diffusivities(d_sol, d_gel, f_gel, min_error, save=True)
 ##########################################################################
