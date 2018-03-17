@@ -47,17 +47,19 @@ path_d_data = "/Users/AmanuelWK/Desktop/BlockResults/computed_data/c0_const_bulk
 path_profiles = "./"  # in same folder
 ##########################################################################
 
+
 #################################
 #             MAIN LOOP         #
 ##########################################################################
 # read errors for different d values
-error_data = [np.loadtxt("%s/results_DSol=%.2f/minError.txt" % (path_d_data, d))
+error_data = [np.loadtxt("%s/DSol=%i/results_DSol=%.2f/minError.txt" % (path_d_data, d, d))
               for d in diffusivities]
 min_error = [np.min(e) for e in error_data]  # gather min errors
 df_values = [np.loadtxt("%s/results_DSol=%.2f/DF_best.txt"
                         % (path_d_data, d), delimiter=',') for d in diffusivities]
 d_sol = [d[0, 1] for d in df_values]
 d_gel, f_gel = [d[-1, 1] for d in df_values], [d[-1, 2] for d in df_values]
+
 
 figure_diffusivities(d_sol, d_gel, f_gel, min_error, save=True)
 ##########################################################################
