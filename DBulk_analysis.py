@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import mpltex  # for acs style figures
 
+# change home directory accordingly
+home = '/Users/woldeaman/'
+
 
 # script estimates experimental error and compares it to error for different
 # diffusivity values in bulk
@@ -12,7 +15,7 @@ import mpltex  # for acs style figures
 ##########################################################################
 @mpltex.acs_decorator  # making acs-style figures
 def figure_diffusivities(d_sol, d_gel, f_gel, error, name='params_dsol',
-                         save=False):
+                         save=False, scale='lin'):
     """
     Plots other parameters change with d_sol.
     """
@@ -28,12 +31,15 @@ def figure_diffusivities(d_sol, d_gel, f_gel, error, name='params_dsol',
     axes[2].axhline(np.average(f_gel), ls=':', c='b')
     axes[2].set(xlabel="D$_{bulk}$ [$\mu$m$^2$/s]",
                 ylabel="$\Delta$F$_{gel}$ [k$_B$T]")
+    if scale is 'log':
+        for ax in axes:  # setting log scale
+            ax.set(yscale='log')
 
     width, height = fig.get_size_inches()
     fig.set_size_inches(width, height*1.5)  # double height because of two rows
 
     if save:
-        plt.savefig("/Users/AmanuelWK/Desktop/%s.pdf" % name, bbox_inches='tight')
+        plt.savefig(home+"/Desktop/%s.pdf" % name, bbox_inches='tight')
     else:
         plt.show()
 ##########################################################################
@@ -42,8 +48,8 @@ def figure_diffusivities(d_sol, d_gel, f_gel, error, name='params_dsol',
 ################################
 #    SETTING UP ENVIRONMENT    #
 ##########################################################################
-diffusivities = np.arange(50, 1001, 50)  # analyzed diffusivity values
-path_d_data = "/Users/AmanuelWK/Desktop/BlockResults/computed_data/c0_const_bulkNormalized/varying_DSol/"
+diffusivities = np.arange(100, 1001, 100)  # analyzed diffusivity values
+path_d_data = home+"Desktop/BlockResults/computed_data/reflective_amountNormalized/varying_DSol"
 path_profiles = "./"  # in same folder
 ##########################################################################
 
@@ -55,11 +61,10 @@ path_profiles = "./"  # in same folder
 error_data = [np.loadtxt("%s/DSol=%i/results_DSol=%.2f/minError.txt" % (path_d_data, d, d))
               for d in diffusivities]
 min_error = [np.min(e) for e in error_data]  # gather min errors
-df_values = [np.loadtxt("%s/results_DSol=%.2f/DF_best.txt"
-                        % (path_d_data, d), delimiter=',') for d in diffusivities]
+df_values = [np.loadtxt("%s/DSol=%i/results_DSol=%.2f/DF_best.txt"
+                        % (path_d_data, d, d), delimiter=',') for d in diffusivities]
 d_sol = [d[0, 1] for d in df_values]
 d_gel, f_gel = [d[-1, 1] for d in df_values], [d[-1, 2] for d in df_values]
-
 
 figure_diffusivities(d_sol, d_gel, f_gel, min_error, save=True)
 ##########################################################################
