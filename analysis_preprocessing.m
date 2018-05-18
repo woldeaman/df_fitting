@@ -20,4 +20,4 @@ processed(:, 1) = xx;
 processed(:, 2:length(cut)+1) = cut;
 
 % save to file
-save('/Users/woldeaman/Desktop/data.txt', 'processed', '-ascii')
+dlmwrite('/Users/woldeaman/Desktop/data.txt', processed, 'delimiter', ',');
