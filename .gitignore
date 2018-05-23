@@ -11,3 +11,7 @@ Thumbs.db
 # jupyter notebook #
 ###################
 __pycache__
+
+# optimization results #
+########################
+result*
