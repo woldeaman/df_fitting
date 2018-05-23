@@ -160,8 +160,9 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, dx_width=None, c0=None
                [-1350]+[i*50 for i in range(xx[6::5].size)]]
     if plot:
         # plotting profiles
-        ps.plotConSkin(xx, cc, ccRes, tt, locs=[1, 3], save=True, path=savePath,
-                       end=None, xticks=xlabels)
+        t_newX_coords = int(t_best/abs(xx_DF[0]-xx_DF[1]) + 6)
+        ps.plotBlock(xx, cc, ccRes, tt, t_newX_coords, locs=[1, 3], save=True,
+                     path=savePath, plt_profiles=10, end=None, xticks=xlabels)
         # plotting averaged D and F
         ps.plotDF(xx, D_mean, F_mean, D_STD=DSTD, F_STD=FSTD, save=True,
                   style='.--', path=savePath, xticks=xlabels)
@@ -330,7 +331,7 @@ def main():
      DInit, alpha) = io.startUp()
 
     # NOTE: settting DSol here
-    DSol = 10
+    DSol = 1000
 
     # ------------------------- discretization ------------------------ #
     # lenght of the different segments for computation
