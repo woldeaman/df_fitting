@@ -159,7 +159,7 @@ def analysis(result, xx_DF, dx_dist, dfParams=None, dx_width=None, c0=None, xx_t
         # plotting profiles
         t_newX_coords = int(t_best/abs(xx_DF[0]-xx_DF[1]) + 6)
         ps.plotBlock(xx, cc, ccRes, tt, t_newX_coords, locs=[1, 3], save=True, path=savePath,
-                     end=None, plt_profiles=10, xticks=xlabels)
+                     end=None, plt_profiles=15, xticks=xlabels)
         # plotting averaged D and F
         ps.plotDF(xx, D_mean, F_mean, D_STD=DSTD, F_STD=FSTD, save=True,
                   style='.--', path=savePath, xticks=xlabels)

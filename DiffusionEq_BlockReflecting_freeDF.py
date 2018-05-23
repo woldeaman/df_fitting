@@ -147,7 +147,7 @@ def analysis(result, dx_dist, dfParams=None, dx_width=None, c0=None, xx_tot=None
     if plot:
         # plotting profiles
         ps.plotBlock(xx, cc, ccRes, tt, locs=[1, 3], save=True, path=savePath,
-                     plt_profiles=10, end=None, xticks=xlabels)
+                     plt_profiles=15, end=None, xticks=xlabels)
         # plotting averaged D and F
         ps.plotDF(xx, D_mean, F_mean, D_STD=DSTD, F_STD=FSTD, save=True,
                   style='.--', path=savePath, xticks=xlabels)
