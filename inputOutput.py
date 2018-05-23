@@ -53,6 +53,7 @@ def startUp():
     bc_mode = 'reflective'  # analysis with reflecting boundary conditions
 
     yes, no = ['yes', 'y', 'Yes', 'YES'], ['no', 'n', 'No', 'NO']
+    c0 = None  # not needed for this analysis
 
     print('Set temporal resolution, supply dt in seconds:')
     dt = int(sys.stdin.readline())
