@@ -2,7 +2,7 @@
 # implemented fokker-planck equation in 1D for
 # # use this for matplotlib on the cluster
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import numpy as np
 import time
 import inputOutput as io
@@ -11,6 +11,7 @@ import functools as ft
 import scipy.optimize as op
 import scipy.special as sp
 import plottingScripts as ps
+import xlsxwriter as xl
 import os
 import sys
 
@@ -75,6 +76,8 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, dx_width=None, c0=None
     # gathering standart deviation for top x% of runs
     # computed from gauß errorpropagation for errors of D1, D2 or F1, F2
     # contribution of t_D, d_D, t_F and d_F neglected for now
+    t_STD, d_STD = np.std(np.array([result[indices[i]].x[3:]
+                                       for i in range(nbr)]), axis=0)
     DSTD_pre = np.std(np.array([result[indices[i]].x[0]
                                 for i in range(nbr)]), axis=0)
     DSTD_pre = [0, DSTD_pre]
@@ -103,10 +106,10 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, dx_width=None, c0=None
     F_best_preNoGauge = result[indices[0]].x[1:3]
     F_best_pre = F_best_preNoGauge - F_best_preNoGauge[0]
     t_best, d_best = result[indices[0]].x[3:]
-    D_best_pre = np.array([fp.sigmoidalDF(D_best_pre, t_best, d_best, x) for x in xx_DF])
-    F_best_pre = np.array([fp.sigmoidalDF(F_best_pre, t_best, d_best, x) for x in xx_DF])
+    D_best = np.array([fp.sigmoidalDF(D_best_pre, t_best, d_best, x) for x in xx_DF])
+    F_best = np.array([fp.sigmoidalDF(F_best_pre, t_best, d_best, x) for x in xx_DF])
     # now keeping fixed D, F in first 6 bins
-    D_best, F_best = fp.computeDF(D_best_pre, F_best_pre, shape=segments)
+    D_best, F_best = fp.computeDF(D_best, F_best, shape=segments)
 
     # computing rate matrix
     W = fp.WMatrixVar(D_best, F_best, start=4, end=None, deltaXX=dx_dist,
@@ -165,6 +168,54 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, dx_width=None, c0=None
         ps.plotDF(xx, D_best, F_best, save=True, style='.--', name='bestDF',
                   path=savePath, xticks=xlabels)
 
+    # saving data to excel spreadsheet
+    workbook = xl.Workbook(savePath+'results.xlsx')
+    worksheet = workbook.add_worksheet()
+    bold = workbook.add_format({'bold': True})
+    # writing headers
+    worksheet.write('A1', 'D_sol_avg [µm^2/s]', bold)
+    worksheet.write('B1', 'D_sol_best [µm^2/s]', bold)
+    worksheet.write('C1', 'D_muc_avg [µm^2/s]', bold)
+    worksheet.write('D1', 'D_muc_best [µm^2/s]', bold)
+    worksheet.write('E1', 'F_muc_avg [kT]', bold)
+    worksheet.write('F1', 'F_muc_best [kT]', bold)
+    worksheet.write('G1', 't_D_avg [µm]', bold)
+    worksheet.write('H1', 't_D_best [µm]', bold)
+    worksheet.write('I1', 't_F_avg [µm]', bold)
+    worksheet.write('J1', 't_F_best [µm]', bold)
+    worksheet.write('K1', 'd_D_avg [µm]', bold)
+    worksheet.write('L1', 'd_D_best [µm]', bold)
+    worksheet.write('M1', 'd_F_avg [µm]', bold)
+    worksheet.write('N1', 'd_F_best [µm]', bold)
+    worksheet.write('O1', 'min E [+/- µM]', bold)
+    # writing entries
+    # D_muc/D_sol and F_muc/F_sol are the corresponding parameters of sigmoidal
+    # functions, does not neccesseraly have to be the value of D and F there,
+    # because profile could be shaped to not reach plateau there !
+    worksheet.write('A2', '%.2f +/- %.2f' % (D_pre[0], DSTD_pre[0]))
+    worksheet.write('B2', '%.2f' % D_best_pre[0])
+    worksheet.write('C2', '%.2f +/- %.2f' % (D_pre[-1], DSTD_pre[-1]))
+    worksheet.write('D2', '%.2f' % D_best_pre[-1])
+    worksheet.write('E2', '%.2f +/- %.2f' % (F_pre[-1], FSTD_pre[-1]))
+    worksheet.write('F2', '%.2f' % F_best_pre[-1])
+    worksheet.write('G2', '%.2f +/- %.2f' % (t_mean,
+                                             t_STD))
+    worksheet.write('H2', '%.2f' % t_best)
+    worksheet.write('I2', '%.2f +/- %.2f' % (t_mean,
+                                             t_STD))
+    worksheet.write('J2', '%.2f' % t_best)
+    worksheet.write('K2', '%.2f +/- %.2f' % (d_mean,
+                                             d_STD))
+    worksheet.write('L2', '%.2f' % d_best)
+    worksheet.write('M2', '%.2f +/- %.2f' % (d_mean,
+                                             d_STD))
+    worksheet.write('N2', '%.2f' % d_best)
+    worksheet.write('O2', '%.2f' % Error[indices[0]])
+
+    # adjusting cell widths
+    worksheet.set_column(0, 15, len('D_sol_best [µm^2/s]'))
+    workbook.close()
+
 
 # function for computation of residuals, given to optimization function as
 # argument to be optimized
@@ -186,16 +237,16 @@ def resFun(df, DSol, cc, xx, tt, dfParams, deltaX=1, dx_dist=None, dx_width=None
     N = cc[1].size  # number of bins
 
     # gathering D and F from non LSQ algorithm
-    # DF parameters to be optimized D1, D2, F1, F2, t_D, d_D, t_F, d_F
+    # DF parameters to be optimized D2, F1, F2, t_D, d_D, t_F, d_F
     d = df[0]
     d = [DSol, d]
     f = df[1:3]  # letting F completely free
 
     # computing sigmoidal d and f profiles
     t_sig, d_sig = df[3], df[4]
-    # k = df[6]  # additional parameter to fit source term
     D = np.array([fp.sigmoidalDF(d, t_sig, d_sig, x) for x in xx])
     F = np.array([fp.sigmoidalDF(f, t_sig, d_sig, x) for x in xx])
+
     # now keeping fixed D, F in first 6 bins
     segments = np.concatenate((np.zeros(6), np.arange(D.size))).astype(int)
     D, F = fp.computeDF(D, F, shape=segments)
@@ -320,7 +371,6 @@ def main():
 
     bndsDUpper = np.ones(1)*DBound
     bndsFUpper = np.ones(params)*FBound
-    # otherwise singular matrix due to vanishing D --> vanishing rates
     bndsDLower = np.zeros(1)
     bndsFLower = np.ones(params)*(-FBound)
     # bounds for interface position and layer thickness zero and max x position
@@ -330,9 +380,6 @@ def main():
     DInit = (np.random.rand(Runs)*DBound)
     # order is [t, d], set boundary initially at x = 50
     tdInit = np.array([50, deltaX*3])
-    # source_k_init = np.zeros(1)  # fit additonal source term
-    # k_bndsLower, k_bndsUpper = np.zeros(1), np.ones(1)*0.2  # ranging between no depletion and all change is depletion
-
     bnds = (np.concatenate((bndsDLower, bndsFLower, tdBoundsLower)),
             np.concatenate((bndsDUpper, bndsFUpper, tdBoundsUpper)))
 
@@ -341,7 +388,6 @@ def main():
     # used to compute sigmoidal DF profiles, x<0 for first 6 bins
     # first 6 bins have constant d, f
     xx_DF = [np.sum(dxx_dist[6:i]) for i in range(6, dxx_dist.size-1)]
-
     # ---------------- option for analysis only --------------------------- #
     if ana:
         print('\nDoing analysis only.')
