@@ -50,24 +50,9 @@ def startUp():
     # ---------------- setting up analysis parameters ----------------------- #
     # reading run parameters from stdin
     # select apropriate boundary conditions
-    print('Analysis with fixed concentration at left boundary? [yes/no]')
-    answer = input()
-    yes, no = ['yes', 'y', 'Yes', 'YES'], ['no', 'n', 'No', 'NO']
-    if answer in yes:
-        bc_mode = 'open1side'  # analysis with fixed concentration
-    elif answer in no:
-        bc_mode = 'reflective'  # analysis with reflecting boundary conditions
-    else:
-        print('Error: input could not be read. Supply yes or no answer!')
-        sys.exit()
+    bc_mode = 'reflective'  # analysis with reflecting boundary conditions
 
-    # reading fixed concentration if chosen bc
-    if bc_mode is 'open1side':
-        # 4µM for Kathy's data and and 15 µM for Tahouras data
-        print('Set concentration value at boundary (same units as profiles):')
-        c0 = float(sys.stdin.readline())
-    else:
-        c0 = None
+    yes, no = ['yes', 'y', 'Yes', 'YES'], ['no', 'n', 'No', 'NO']
 
     print('Set temporal resolution, supply dt in seconds:')
     dt = int(sys.stdin.readline())
