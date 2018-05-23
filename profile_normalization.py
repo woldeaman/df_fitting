@@ -23,7 +23,6 @@ def normalize_to_amount(xx, profiles, dx, xx_tot=x_tot):
     bins = int(xx_ex/dx)  # extending profile to normalize to total amount
     for p in profiles.T:
         c_ext = np.append(np.ones(bins)*p[0], p)  # extend to boundary
-        c_ext = p
         amount = np.sum(c_ext)  # sum up to get amount (const. binning)
         normalized.append(p/amount)  # divide to normalize
     # set bulk concentration to one again
