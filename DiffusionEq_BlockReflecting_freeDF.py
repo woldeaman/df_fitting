@@ -142,7 +142,8 @@ def analysis(result, dx_dist, dfParams=None, dx_width=None, c0=None, xx_tot=None
     x_0 = xx_tot - np.max(xx_og)
     # for labeling the x-axis correctly
     xlabels = [[xx[0]]+[x for x in xx[6::5]],
-               [-x_0]+[i*5*deltaX for i in range(xx[6::5].size)]]
+               [-x_0]+[i*5*deltaX[1] for i in range(xx[6::5].size)]]
+
     if plot:
         # plotting profiles
         ps.plotBlock(xx, cc, ccRes, tt, locs=[1, 3], save=True, path=savePath,

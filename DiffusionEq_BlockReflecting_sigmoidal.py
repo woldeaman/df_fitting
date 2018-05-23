@@ -17,7 +17,7 @@ import sys
 startTime = time.time()
 
 
-def analysis(result, xx_DF, dx_dist, dfParams=None, dx_width=None, c0=None,
+def analysis(result, xx_DF, dx_dist, dfParams=None, dx_width=None, c0=None, xx_tot=None,
              xx=None, cc=None, tt=None, deltaX=None, plot=False, per=0.1, alpha=0,
              bc='reflective', savePath=None):
     '''
@@ -149,9 +149,12 @@ def analysis(result, xx_DF, dx_dist, dfParams=None, dx_width=None, c0=None,
     # --------------------------- saving data ------------------------------- #
 
     # ------------------------- plotting data ------------------------------- #
+    # reconstruct original x-vector
+    xx_og = [np.sum(dx_dist[7:i]) for i in range(6, dx_dist.size)]
+    x_0 = xx_tot - np.max(xx_og)
     # for labeling the x-axis correctly
     xlabels = [[xx[0]]+[x for x in xx[6::5]],
-               [-1350]+[i*50 for i in range(xx[6::5].size)]]
+               [-x_0]+[i*5*deltaX[1] for i in range(xx[6::5].size)]]
     if plot:
         # plotting profiles
         t_newX_coords = int(t_best/abs(xx_DF[0]-xx_DF[1]) + 6)
@@ -351,7 +354,7 @@ def main():
         print('Overall %i runs have been performed.' % res.size)
         analysis(np.array(res), bc=bc_mode, c0=c0, xx=xx, xx_DF=xx_DF, cc=cc, tt=tt,
                  deltaX=deltaXX, alpha=alpha, plot=True, per=0.1, dfParams=params,
-                 dx_dist=dxx_dist, dx_width=dxx_width)
+                 dx_dist=dxx_dist, dx_width=dxx_width, xx_tot=x_tot)
         print('\nPlots have been made and data was extraced and saved.')
         sys.exit()
     # ---------------- option for analysis only --------------------------- #
@@ -374,7 +377,7 @@ def main():
 
     analysis(np.array(results), bc=bc_mode, c0=c0, xx_DF=xx_DF, xx=xx, cc=cc,
              tt=tt, dfParams=params, deltaX=deltaXX, alpha=alpha, plot=True,
-             per=0.1, dx_dist=dxx_dist, dx_width=dxx_width)
+             per=0.1, dx_dist=dxx_dist, dx_width=dxx_width, xx_tot=x_tot)
 
     # returns number of runs in order to compute average time per run
     return Runs

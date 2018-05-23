@@ -160,7 +160,7 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
     x_0 = xx_tot - np.max(xx_og)
     # for labeling the x-axis correctly
     xlabels = [[xx[0]]+[x for x in xx[6::5]],
-               [-x_0]+[i*5*deltaX for i in range(xx[6::5].size)]]
+               [-x_0]+[i*5*deltaX[1] for i in range(xx[6::5].size)]]
     if plot:
         # plotting profiles
         t_newX_coords = int(t_best/abs(xx_DF[0]-xx_DF[1]) + 6)
