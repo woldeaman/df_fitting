@@ -1,7 +1,7 @@
+"""Analyse fits with different constant diffusivity."""
 # -*- coding: utf-8 -*-
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 import mpltex  # for acs style figures
 
 # change home directory accordingly
@@ -15,15 +15,12 @@ home = '/Users/woldeaman/'
 ##########################################################################
 @mpltex.acs_decorator  # making acs-style figures
 def figure_diffusivities(d_sol, d_gel, f_gel, error, name='params_dsol',
-                         save=False, scale='lin'):
-    """
-    Plots other parameters change with d_sol.
-    """
-
+                         title='', save=False, scale='lin'):
+    """Plot parameters change with d_sol."""
     fig, axes = plt.subplots(3, 1, sharex='col')
     axes[0].plot(d_sol, error, 'ko')
     axes[0].axhline(error[-1], c='k', ls=':')
-    axes[0].set(ylabel="Minimal error $\sigma$")
+    axes[0].set(ylabel="Minimal error $\sigma$", title=title)  # add title if prefered
     axes[1].plot(d_sol, d_gel, 'ro')
     axes[1].axhline(np.average(d_gel), ls=':', c='r')
     axes[1].set(ylabel="D$_{gel}$ [$\mu$m$^2$/s]")
@@ -42,15 +39,37 @@ def figure_diffusivities(d_sol, d_gel, f_gel, error, name='params_dsol',
         plt.savefig(home+"/Desktop/%s.pdf" % name, bbox_inches='tight')
     else:
         plt.show()
+
+
+def read_data(path):
+    """Read data from simulations."""
+    # cycle through all simulations
+    D_sol, D_gel, F_gel, Error = {}, {}, {}, {}
+    for set in setups:
+        D_sol[set], D_gel[set], F_gel[set], Error[set] = [], [], [], []
+        for d in diffusivities:
+            subpath = '%s/DSol_%s/results_DSol=%.2f/' % (set, d, d)
+            err_raw = np.loadtxt(path+subpath+'minError.txt', delimiter=',')
+            df_raw = np.loadtxt(path+subpath+'DF_best.txt', delimiter=',')
+            min_err = np.min(err_raw)  # gather minimal error
+            d_sol, d_gel = df_raw[0, 1], df_raw[-1, 1]  # gather D's
+            f_gel = df_raw[-1, 2]  # gather F
+            # save loaded data in lists
+            D_sol[set].append(d_sol)
+            D_gel[set].append(d_gel)
+            F_gel[set].append(f_gel)
+            Error[set].append(min_err)
+
+    return D_sol, D_gel, F_gel, Error
 ##########################################################################
 
 
 ################################
 #    SETTING UP ENVIRONMENT    #
 ##########################################################################
-diffusivities = np.arange(100, 1001, 100)  # analyzed diffusivity values
-path_d_data = home+"Desktop/BlockResults/computed_data/reflective_amountNormalized/varying_DSol"
-path_profiles = "./"  # in same folder
+setups = ['gel10_dex10', 'gel10_dex4', 'gel6_dex10', 'gel6_dex20', 'gel6_dex4']
+diffusivities = [d for d in np.arange(100, 1001, 100).astype(int)] + [1, 27.4, 39.5, 55]
+path_d_data = home+"/Desktop/Block_new_data/reflective_full_bulk/sigmoidal/"
 ##########################################################################
 
 
@@ -58,13 +77,9 @@ path_profiles = "./"  # in same folder
 #             MAIN LOOP         #
 ##########################################################################
 # read errors for different d values
-error_data = [np.loadtxt("%s/DSol=%i/results_DSol=%.2f/minError.txt" % (path_d_data, d, d))
-              for d in diffusivities]
-min_error = [np.min(e) for e in error_data]  # gather min errors
-df_values = [np.loadtxt("%s/DSol=%i/results_DSol=%.2f/DF_best.txt"
-                        % (path_d_data, d, d), delimiter=',') for d in diffusivities]
-d_sol = [d[0, 1] for d in df_values]
-d_gel, f_gel = [d[-1, 1] for d in df_values], [d[-1, 2] for d in df_values]
+D_sol, D_gel, F_gel, Error = read_data(path_d_data)
 
-figure_diffusivities(d_sol, d_gel, f_gel, min_error, save=True)
+for i, set in enumerate(setups):
+    figure_diffusivities(D_sol[set], D_gel[set], F_gel[set], Error[set],
+                         title=set.split('_'), name=set, save=True)
 ##########################################################################
