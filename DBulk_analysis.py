@@ -69,7 +69,7 @@ def read_data(path):
 ##########################################################################
 setups = ['gel10_dex10', 'gel10_dex4', 'gel6_dex10', 'gel6_dex20', 'gel6_dex4']
 diffusivities = [d for d in np.arange(100, 1001, 100).astype(int)] + [1, 27.4, 39.5, 55, 101.4]
-path_d_data = home+"/Desktop/Block_new_data/reflective_full_bulk/sigmoidal/"
+path_d_data = home+"/Desktop/Cluster/jobs/fokkerPlanckModel/Block_data/reflective_full_bulk/sigmoidal/"
 ##########################################################################
 
 
