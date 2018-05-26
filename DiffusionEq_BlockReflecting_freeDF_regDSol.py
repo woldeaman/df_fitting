@@ -17,7 +17,7 @@ startTime = time.time()
 
 
 def analysis(result, dx_dist, dfParams=None, dx_width=None, c0=None, xx_tot=None,
-             xx=None, cc=None, tt=None, deltaX=None, plot=False, per=0.1, alpha=0,
+             xx=None, cc=None, tt=None, deltaX=None, plot=False, per=1, alpha=0,
              bc='reflective', savePath=None):
     '''
     Function analyses results from ls-optimization,
@@ -29,7 +29,7 @@ def analysis(result, dx_dist, dfParams=None, dx_width=None, c0=None, xx_tot=None
     # ----------------- setting working parameters --------------------- #
     # saving output in current results folder in current directory
     if savePath is None:
-        savePath = os.path.join(os.getcwd(), 'results_freeDF/')
+        savePath = os.path.join(os.getcwd(), 'results_alpha=%s/' % alpha)
         if not os.path.exists(savePath):
             os.makedirs(savePath)
 
@@ -82,15 +82,15 @@ def analysis(result, dx_dist, dfParams=None, dx_width=None, c0=None, xx_tot=None
 
     # gathering best D and F for computation of profiles
     D_best_pre = result[indices[0]].x[:N]
-    D_best_pre = np.array([(D_best_pre[i] + D_best_pre[i+1])/2
-                           for i in range(D_best_pre.size-1)])
+    D_best_pre_p = np.array([(D_best_pre[i] + D_best_pre[i+1])/2
+                             for i in range(D_best_pre.size-1)])
     # stupid workaround for equal length in D and F
-    D_best_pre = np.append(D_best_pre, D_best_pre[-1])
+    D_best_pre_p = np.append(D_best_pre_p, D_best_pre_p[-1])
     F_best_preNoGauge = result[indices[0]].x[N:]
     F_best_pre = F_best_preNoGauge - F_best_preNoGauge[0]
 
     # for extrapolation in bulk
-    D_best = np.concatenate((np.ones(6)*D_best_pre[0], D_best_pre))
+    D_best = np.concatenate((np.ones(6)*D_best_pre_p[0], D_best_pre_p))
     F_best = np.concatenate((np.ones(6)*F_best_pre[0], F_best_pre))
 
     # computing rate matrix
@@ -98,7 +98,7 @@ def analysis(result, dx_dist, dfParams=None, dx_width=None, c0=None, xx_tot=None
                       con=True)
 
     # computing concentration profiles for best D and F
-    ccRes = np.array([fp.calcC(cc[0], tt[j], W=W, bc=bc) for j in range(M)]).T
+    ccRes = [fp.calcC(cc[0], tt[j], W=W, bc=bc) for j in range(M)]
     # -------------------------- loading results --------------------------- #
 
     # --------------------------- saving data ------------------------------- #
@@ -109,7 +109,7 @@ def analysis(result, dx_dist, dfParams=None, dx_width=None, c0=None, xx_tot=None
         header_cons += ('column%i: c-profile [micro_M] for t_%i = %i min\n'
                         % (i+2, i, int(t/60)))
     # saving analyzed data for best results for plotting
-    np.savetxt(savePath+'concentrationRes.txt', np.c_[xx, ccRes],
+    np.savetxt(savePath+'concentrationRes.txt', np.c_[xx, np.array(ccRes).T],
                delimiter=',',
                header=('Numerically computed concentration profiles\n'
                        'column1: x-distance [micro_m]\n'+header_cons))
@@ -146,13 +146,32 @@ def analysis(result, dx_dist, dfParams=None, dx_width=None, c0=None, xx_tot=None
 
     if plot:
         # plotting profiles
-        ps.plotBlock(xx, cc, ccRes, tt, locs=[1, 3], save=True, path=savePath,
+        ps.plotBlock(xx, cc, np.array(ccRes).T, tt, locs=[1, 3], save=True, path=savePath,
                      plt_profiles=15, end=None, xticks=xlabels)
         # plotting averaged D and F
         ps.plotDF(xx, D_mean, F_mean, D_STD=DSTD, F_STD=FSTD, save=True,
                   style='.--', path=savePath, xticks=xlabels)
         ps.plotDF(xx, D_best, F_best, save=True, style='.--', name='bestDF',
                   path=savePath, xticks=xlabels)
+
+    # ---------------------- regularization ------------------------------ #
+    # NOTE: this is for analysis of parameter for L2 regularization
+    RR = np.array([cc[j] - ccRes[j][6:] for j in range(1, M)]).T
+    RRn = RR.reshape(RR.size)  # residual vector contains all deviations
+    residual = np.sum(RRn**2)
+
+    # adding regularization of DSol to literature value
+    DSol = 55  # NOTE: set DSol here
+    # regularize mean diffusivity in solution up to interface
+    d_mean = np.mean(D_best_pre[:18])
+    regularization = (d_mean-DSol)**2  # regularization term only for DSol
+
+    print('\nBest solution has residuals\n|A*x-b|^2 = %f\n|x-x_0|^2 = %f' %
+          (residual, regularization))
+    np.savetxt(savePath+'res_alpha=%f.txt' % alpha,
+               np.array([residual, regularization]),
+               header='row 1: |A*x-b|^2\nrow 2: alpha*|x-x_0|^2')
+    # ---------------------- regularization ------------------------------ #
 
 
 # function for computation of residuals, given to optimization function as
