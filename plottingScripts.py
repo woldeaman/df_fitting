@@ -282,7 +282,7 @@ def plotBlock(xx, cc, ccRes, tt, t_sig=None, locs=[0, 2], save=False, path=None,
             path = '/home/amanuelwk/Desktop/'
 
     # setting number of profiles to plot
-    if plt_profiles is 'all':
+    if plt_profiles is 'all' or M < plt_profiles:
         plt_nbr = np.arange(M)  # go through all profiles
     else:
         skp = int(M/plt_profiles)
