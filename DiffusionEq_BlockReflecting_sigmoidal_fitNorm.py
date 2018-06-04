@@ -1,7 +1,8 @@
+"""Fitting also normalization of profiles."""
 # -*- coding: utf-8 -*-
 # implemented fokker-planck equation in 1D for
 # # use this for matplotlib on the cluster
-import matplotlib
+import matplotlib.pyplot as plt
 # matplotlib.use('Agg')
 import numpy as np
 import time
@@ -17,7 +18,6 @@ import sys
 
 startTime = time.time()
 
-
 def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
              dx_width=None, c0=None, xx=None, cc=None, tt=None, deltaX=None,
              plot=False, per=1, alpha=0, bc='reflective', savePath=None):
@@ -27,7 +27,6 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
     cc[i, :, :] at time tt[i] will be made, where D and F is averaged over
     top 'per' percent (standart is 0.1 - averaged over top 10%)
     '''
-
     # ----------------- setting working parameters --------------------- #
     # saving output in current results folder in current directory
     if savePath is None:
@@ -56,62 +55,69 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
     indices = np.argsort(Error)  # for sorting according to error
 
     # gathering mean of F and D for best x% of runs
-    D_pre = np.mean(np.array([result[indices[i]].x[0]
-                              for i in range(nbr)]), axis=0)
-    D_pre = [DSol, D_pre]
-    F_preNoGauge = np.mean(np.array([result[indices[i]].x[1:3]
-                                     for i in range(nbr)]), axis=0)
-    F_pre = F_preNoGauge - F_preNoGauge[0]
-    t_mean, d_mean = np.mean(np.array([result[indices[i]].x[3:5]
-                                       for i in range(nbr)]), axis=0)
-    c_bulk_mean = np.mean(np.array([result[indices[i]].x[5:]
+    # D_pre = np.mean(np.array([result[indices[i]].x[0]
+    #                           for i in range(nbr)]), axis=0)
+    # D_pre = [DSol, D_pre]
+    # F_preNoGauge = np.mean(np.array([result[indices[i]].x[1:3]
+    #                                  for i in range(nbr)]), axis=0)
+    # F_pre = F_preNoGauge - F_preNoGauge[0]
+    # t_mean, d_mean = np.mean(np.array([result[indices[i]].x[3:5]
+    #                                    for i in range(nbr)]), axis=0)
+    # c_bulk_mean = np.mean(np.array([result[indices[i]].x[5:]
+    #                                 for i in range(nbr)]), axis=0)
+    c_bulk_mean = np.mean(np.array([result[indices[i]].x
                                     for i in range(nbr)]), axis=0)
-    D_mean_pre = np.array([fp.sigmoidalDF(D_pre, t_mean,
-                                          d_mean, x) for x in xx_DF])
-    F_mean_pre = np.array([fp.sigmoidalDF(F_pre, t_mean,
-                                          d_mean, x) for x in xx_DF])
+    # D_mean_pre = np.array([fp.sigmoidalDF(D_pre, t_mean,
+    #                                       d_mean, x) for x in xx_DF])
+    # F_mean_pre = np.array([fp.sigmoidalDF(F_pre, t_mean,
+    #                                       d_mean, x) for x in xx_DF])
+    #
+    segments = np.concatenate((np.zeros(6), np.arange(len(xx_DF)))).astype(int)
 
-    segments = np.concatenate((np.zeros(6), np.arange(D_mean_pre.size))).astype(int)
-    # now keeping fixed D, F in first 6 bins
-    D_mean, F_mean = fp.computeDF(D_mean_pre, F_mean_pre, shape=segments)
+    # # now keeping fixed D, F in first 6 bins
+    # D_mean, F_mean = fp.computeDF(D_mean_pre, F_mean_pre, shape=segments)
 
     # gathering standart deviation for top x% of runs
     # computed from gauß errorpropagation for errors of D1, D2 or F1, F2
     # contribution of t_D, d_D, t_F and d_F neglected for now
-    t_STD, d_STD = np.std(np.array([result[indices[i]].x[3:5]
-                                    for i in range(nbr)]), axis=0)
-    DSTD_pre = np.std(np.array([result[indices[i]].x[0]
-                                for i in range(nbr)]), axis=0)
-    DSTD_pre = [0, DSTD_pre]
-    FSTD_pre = np.std(np.array([result[indices[i]].x[1:3]
-                                for i in range(nbr)]), axis=0)
-    DSTD_pre = np.array([np.sqrt(
-        ((0.5 - sp.erf(
-            (x-t_mean)/(np.sqrt(2)*d_mean))/2) *
-         DSTD_pre[0])**2 +
-        ((0.5 + sp.erf(
-            (x-t_mean)/(np.sqrt(2)*d_mean))/2) *
-         DSTD_pre[1])**2) for x in xx_DF])
-    FSTD_pre = np.array([np.sqrt(
-        ((0.5 - sp.erf(
-            (x-t_mean)/(np.sqrt(2)*d_mean))/2) *
-         FSTD_pre[0])**2 +
-        ((0.5 + sp.erf(
-            (x-t_mean)/(np.sqrt(2)*d_mean))/2) *
-         FSTD_pre[1])**2) for x in xx_DF])
-    c_bulk_STD = np.std(np.array([result[indices[i]].x[5:]
+    # t_STD, d_STD = np.std(np.array([result[indices[i]].x[3:5]
+    #                                 for i in range(nbr)]), axis=0)
+    # DSTD_pre = np.std(np.array([result[indices[i]].x[0]
+    #                             for i in range(nbr)]), axis=0)
+    # DSTD_pre = [0, DSTD_pre]
+    # FSTD_pre = np.std(np.array([result[indices[i]].x[1:3]
+    #                             for i in range(nbr)]), axis=0)
+    # DSTD_pre = np.array([np.sqrt(
+    #     ((0.5 - sp.erf(
+    #         (x-t_mean)/(np.sqrt(2)*d_mean))/2) *
+    #      DSTD_pre[0])**2 +
+    #     ((0.5 + sp.erf(
+    #         (x-t_mean)/(np.sqrt(2)*d_mean))/2) *
+    #      DSTD_pre[1])**2) for x in xx_DF])
+    # FSTD_pre = np.array([np.sqrt(
+    #     ((0.5 - sp.erf(
+    #         (x-t_mean)/(np.sqrt(2)*d_mean))/2) *
+    #      FSTD_pre[0])**2 +
+    #     ((0.5 + sp.erf(
+    #         (x-t_mean)/(np.sqrt(2)*d_mean))/2) *
+    #      FSTD_pre[1])**2) for x in xx_DF])
+    # c_bulk_STD = np.std(np.array([result[indices[i]].x[5:]
+    #                               for i in range(nbr)]), axis=0)
+    c_bulk_STD = np.std(np.array([result[indices[i]].x
                                   for i in range(nbr)]), axis=0)
 
     # now keeping fixed D, F in first 6 bins
-    DSTD, FSTD = fp.computeDF(DSTD_pre, FSTD_pre, shape=segments)
+    # DSTD, FSTD = fp.computeDF(DSTD_pre, FSTD_pre, shape=segments)
 
     # gathering best D and F for computation of profiles
-    D_best_pre = result[indices[0]].x[0]
-    D_best_pre = [DSol, D_best_pre]
-    F_best_preNoGauge = result[indices[0]].x[1:3]
-    F_best_pre = F_best_preNoGauge - F_best_preNoGauge[0]
-    t_best, d_best = result[indices[0]].x[3:5]
-    c_bulk_best = result[indices[0]].x[5:]
+    # D_best_pre = result[indices[0]].x[0]
+    # D_best_pre = [DSol, D_best_pre]
+    # F_best_preNoGauge = result[indices[0]].x[1:3]
+    # F_best_pre = F_best_preNoGauge - F_best_preNoGauge[0]
+    # t_best, d_best = result[indices[0]].x[3:5]
+    # c_bulk_best = result[indices[0]].x[5:]
+    c_bulk_best = result[indices[0]].x
+    F_best_pre, D_best_pre, t_best, d_best = [0, 0.98], [55, 35.26], 166.74, 4.47
     D_best = np.array([fp.sigmoidalDF(D_best_pre, t_best, d_best, x) for x in xx_DF])
     F_best = np.array([fp.sigmoidalDF(F_best_pre, t_best, d_best, x) for x in xx_DF])
     # now keeping fixed D, F in first 6 bins
@@ -124,19 +130,25 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
     # computing concentration profiles for best D and F
     ccRes = np.array([fp.calcC(cc[0], tt[j], W=W, bc=bc) for j in range(M)]).T
     # computing normalized concentration profiles
-    x_tot = 1780  # total length of system in µm
-    length_bulk = x_tot - np.max(xx)
-    k_norm_mean = c_bulk_mean*length_bulk/deltaX[1]
-    k_norm_best = c_bulk_best*length_bulk/deltaX[1]
+    # x_tot = 1780  # total length of system in µm
+    # length_bulk = x_tot - np.max(xx)
+    # k_norm_mean = c_bulk_mean*length_bulk/deltaX[1]
+    # k_norm_best = c_bulk_best*length_bulk/deltaX[1]
+    # norm_zero = cc[0][0]/(np.sum(dx_width*cc[0]))  # at t = 0 c_bulk = 1
+    #
+    # # gathering fit parameters for normalization
+    # c_tot_mean = [deltaX[1] * (k + np.sum(c)) for c, k in zip(cc[1:], k_norm_mean)]
+    # c_tot_best = [deltaX[1] * (k + np.sum(c)) for c, k in zip(cc[1:], k_norm_best)]
 
-    # gathering fit parameters for normalization
-    c_tot_mean = [deltaX[1] * (k + np.sum(c)) for c, k in zip(cc[1:], k_norm_mean)]
-    c_tot_best = [deltaX[1] * (k + np.sum(c)) for c, k in zip(cc[1:], k_norm_best)]
+    # cc_best, cc_mean = [cc[0]], [cc[0]]
+    # for c_b, c_m, c_og in zip(c_tot_best, c_tot_mean, cc[1:]):
+    #     cc_best.append(c_og/(c_b*norm_zero))
+    #     cc_mean.append(c_og/(c_m*norm_zero))
 
     cc_best, cc_mean = [cc[0]], [cc[0]]
-    for c_b, c_m, c_og in zip(c_tot_best, c_tot_mean, cc[1:]):
-        cc_best.append(c_og/(c_b*cc[0][0]))
-        cc_mean.append(c_og/(c_m*cc[0][0]))
+    for c_b, c_m, c_og in zip(c_bulk_best, c_bulk_mean, cc[1:]):
+        cc_best.append(c_og*c_b)
+        cc_mean.append(c_og*c_m)
     # -------------------------- loading results --------------------------- #
 
     # --------------------------- saving data ------------------------------- #
@@ -151,14 +163,14 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
                header=('Numerically computed concentration profiles\n'
                        'column1: x-distance [micro_m]\n'+header_cons))
     # saving averaged DF
-    np.savetxt(savePath+'DF_avg.txt', np.c_[xx, D_mean, DSTD, F_mean, FSTD],
-               delimiter=',',
-               header=('Diffusivity and free energy profiles from analysis\n'
-                       'column1: x-distance [micro_m]\n'
-                       'cloumn2: average diffusivity [micro_m^2/s]\n'
-                       'cloumn3: stdev of diffusivity [+/- micro_m^2/s]\n'
-                       'cloumn4: average free energy [k_BT]\n'
-                       'cloumn5: stdev of free energy [+/- k_BT]'))
+    # np.savetxt(savePath+'DF_avg.txt', np.c_[xx, D_mean, DSTD, F_mean, FSTD],
+    #            delimiter=',',
+    #            header=('Diffusivity and free energy profiles from analysis\n'
+    #                    'column1: x-distance [micro_m]\n'
+    #                    'cloumn2: average diffusivity [micro_m^2/s]\n'
+    #                    'cloumn3: stdev of diffusivity [+/- micro_m^2/s]\n'
+    #                    'cloumn4: average free energy [k_BT]\n'
+    #                    'cloumn5: stdev of free energy [+/- k_BT]'))
     # saving best DF
     np.savetxt(savePath+'DF_best.txt', np.c_[xx, D_best, F_best],
                delimiter=',',
@@ -193,58 +205,58 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
         ps.plotBlock(xx, cc_best, ccRes, tt, t_newX_coords, locs=[1, 3], save=True,
                      path=savePath, plt_profiles='all', end=None, xticks=xlabels)
         # plotting averaged D and F
-        ps.plotDF(xx, D_mean, F_mean, D_STD=DSTD, F_STD=FSTD, save=True,
-                  style='.--', path=savePath, xticks=xlabels)
+        # ps.plotDF(xx, D_mean, F_mean, D_STD=DSTD, F_STD=FSTD, save=True,
+        #           style='.--', path=savePath, xticks=xlabels)
         ps.plotDF(xx, D_best, F_best, save=True, style='.--', name='bestDF',
                   path=savePath, xticks=xlabels)
 
-    # saving data to excel spreadsheet
-    workbook = xl.Workbook(savePath+'results.xlsx')
-    worksheet = workbook.add_worksheet()
-    bold = workbook.add_format({'bold': True})
-    # writing headers
-    worksheet.write('A1', 'D_sol_avg [µm^2/s]', bold)
-    worksheet.write('B1', 'D_sol_best [µm^2/s]', bold)
-    worksheet.write('C1', 'D_muc_avg [µm^2/s]', bold)
-    worksheet.write('D1', 'D_muc_best [µm^2/s]', bold)
-    worksheet.write('E1', 'F_muc_avg [kT]', bold)
-    worksheet.write('F1', 'F_muc_best [kT]', bold)
-    worksheet.write('G1', 't_D_avg [µm]', bold)
-    worksheet.write('H1', 't_D_best [µm]', bold)
-    worksheet.write('I1', 't_F_avg [µm]', bold)
-    worksheet.write('J1', 't_F_best [µm]', bold)
-    worksheet.write('K1', 'd_D_avg [µm]', bold)
-    worksheet.write('L1', 'd_D_best [µm]', bold)
-    worksheet.write('M1', 'd_F_avg [µm]', bold)
-    worksheet.write('N1', 'd_F_best [µm]', bold)
-    worksheet.write('O1', 'min E [+/- µM]', bold)
-    # writing entries
-    # D_muc/D_sol and F_muc/F_sol are the corresponding parameters of sigmoidal
-    # functions, does not neccesseraly have to be the value of D and F there,
-    # because profile could be shaped to not reach plateau there !
-    worksheet.write('A2', '%.2f +/- %.2f' % (D_pre[0], DSTD_pre[0]))
-    worksheet.write('B2', '%.2f' % D_best_pre[0])
-    worksheet.write('C2', '%.2f +/- %.2f' % (D_pre[-1], DSTD_pre[-1]))
-    worksheet.write('D2', '%.2f' % D_best_pre[-1])
-    worksheet.write('E2', '%.2f +/- %.2f' % (F_pre[-1], FSTD_pre[-1]))
-    worksheet.write('F2', '%.2f' % F_best_pre[-1])
-    worksheet.write('G2', '%.2f +/- %.2f' % (t_mean,
-                                             t_STD))
-    worksheet.write('H2', '%.2f' % t_best)
-    worksheet.write('I2', '%.2f +/- %.2f' % (t_mean,
-                                             t_STD))
-    worksheet.write('J2', '%.2f' % t_best)
-    worksheet.write('K2', '%.2f +/- %.2f' % (d_mean,
-                                             d_STD))
-    worksheet.write('L2', '%.2f' % d_best)
-    worksheet.write('M2', '%.2f +/- %.2f' % (d_mean,
-                                             d_STD))
-    worksheet.write('N2', '%.2f' % d_best)
-    worksheet.write('O2', '%.2f' % Error[indices[0]])
-
-    # adjusting cell widths
-    worksheet.set_column(0, 15, len('D_sol_best [µm^2/s]'))
-    workbook.close()
+    # # saving data to excel spreadsheet
+    # workbook = xl.Workbook(savePath+'results.xlsx')
+    # worksheet = workbook.add_worksheet()
+    # bold = workbook.add_format({'bold': True})
+    # # writing headers
+    # worksheet.write('A1', 'D_sol_avg [µm^2/s]', bold)
+    # worksheet.write('B1', 'D_sol_best [µm^2/s]', bold)
+    # worksheet.write('C1', 'D_muc_avg [µm^2/s]', bold)
+    # worksheet.write('D1', 'D_muc_best [µm^2/s]', bold)
+    # worksheet.write('E1', 'F_muc_avg [kT]', bold)
+    # worksheet.write('F1', 'F_muc_best [kT]', bold)
+    # worksheet.write('G1', 't_D_avg [µm]', bold)
+    # worksheet.write('H1', 't_D_best [µm]', bold)
+    # worksheet.write('I1', 't_F_avg [µm]', bold)
+    # worksheet.write('J1', 't_F_best [µm]', bold)
+    # worksheet.write('K1', 'd_D_avg [µm]', bold)
+    # worksheet.write('L1', 'd_D_best [µm]', bold)
+    # worksheet.write('M1', 'd_F_avg [µm]', bold)
+    # worksheet.write('N1', 'd_F_best [µm]', bold)
+    # worksheet.write('O1', 'min E [+/- µM]', bold)
+    # # writing entries
+    # # D_muc/D_sol and F_muc/F_sol are the corresponding parameters of sigmoidal
+    # # functions, does not neccesseraly have to be the value of D and F there,
+    # # because profile could be shaped to not reach plateau there !
+    # worksheet.write('A2', '%.2f +/- %.2f' % (D_pre[0], DSTD_pre[0]))
+    # worksheet.write('B2', '%.2f' % D_best_pre[0])
+    # worksheet.write('C2', '%.2f +/- %.2f' % (D_pre[-1], DSTD_pre[-1]))
+    # worksheet.write('D2', '%.2f' % D_best_pre[-1])
+    # worksheet.write('E2', '%.2f +/- %.2f' % (F_pre[-1], FSTD_pre[-1]))
+    # worksheet.write('F2', '%.2f' % F_best_pre[-1])
+    # worksheet.write('G2', '%.2f +/- %.2f' % (t_mean,
+    #                                          t_STD))
+    # worksheet.write('H2', '%.2f' % t_best)
+    # worksheet.write('I2', '%.2f +/- %.2f' % (t_mean,
+    #                                          t_STD))
+    # worksheet.write('J2', '%.2f' % t_best)
+    # worksheet.write('K2', '%.2f +/- %.2f' % (d_mean,
+    #                                          d_STD))
+    # worksheet.write('L2', '%.2f' % d_best)
+    # worksheet.write('M2', '%.2f +/- %.2f' % (d_mean,
+    #                                          d_STD))
+    # worksheet.write('N2', '%.2f' % d_best)
+    # worksheet.write('O2', '%.2f' % Error[indices[0]])
+    #
+    # # adjusting cell widths
+    # worksheet.set_column(0, 15, len('D_sol_best [µm^2/s]'))
+    # workbook.close()
 
 
 # function for computation of residuals, given to optimization function as
@@ -268,25 +280,30 @@ def resFun(df, DSol, cc, xx, tt, dfParams, deltaX=1, dx_dist=None, dx_width=None
 
     # gathering D and F from non LSQ algorithm
     # DF parameters to be optimized D2, F1, F2, t_D, d_D, t_F, d_F
-    d = df[0]
-    d = [DSol, d]
-    f = df[1:3]  # letting F completely free
+    # d = df[0]
+    # d = [DSol, d]
+    # f = df[1:3]  # letting F completely free
+    d = [55, 35.26]  # NOTE: fixing D, F
+    f = [0, 0.98]  # letting F completely free
 
     # computing sigmoidal d and f profiles
-    t_sig, d_sig = df[3], df[4]
+    # t_sig, d_sig = df[3], df[4]
+    t_sig, d_sig = 166.74, 4.47  # NOTE: also fix sigmoid parameters
     D = np.array([fp.sigmoidalDF(d, t_sig, d_sig, x) for x in xx])
     F = np.array([fp.sigmoidalDF(f, t_sig, d_sig, x) for x in xx])
 
     # average concentration in bulk related to normalization
-    x_tot = 1780  # total length of system in µm
-    length_bulk = x_tot - np.max(xx)
-    c_avg = df[5:]  # fitting mean concentration in bulk
-    k_norm = c_avg*length_bulk/deltaX[1]
-
-    # gathering fit parameters for normalization
-    c_tot = [deltaX[1] * (k + np.sum(c)) for c, k in zip(cc[1:], k_norm)]
-    norm_zero = cc[0][0]/(deltaX[1]*np.sum(cc[0]))
-    cc[1:] = [c/(c_t*norm_zero) for c, c_t in zip(cc[1:], c_tot)]
+    # x_tot = 1780  # total length of system in µm
+    # length_bulk = x_tot - np.max(xx)
+    # # c_avg = df[5:]  # fitting mean concentration in bulk
+    # c_avg = df  # fitting mean concentration in bulk
+    # k_norm = c_avg*length_bulk/deltaX[1]
+    #
+    # # gathering fit parameters for normalization
+    # c_tot = [deltaX[1] * (k + np.sum(c)) for c, k in zip(cc[1:], k_norm)]
+    # norm_zero = cc[0][0]/(np.sum(dx_width*cc[0]))  # at t = 0 c_bulk = 1
+    # cc[1:] = [c/(c_t*norm_zero) for c, c_t in zip(cc[1:], c_tot)]
+    cc_norm = [cc[0]]+[c*norm for c, norm in zip(cc[1:], df)]
 
     # now keeping fixed D, F in first 6 bins
     segments = np.concatenate((np.zeros(6), np.arange(D.size))).astype(int)
@@ -325,7 +342,9 @@ def resFun(df, DSol, cc, xx, tt, dfParams, deltaX=1, dx_dist=None, dx_width=None
     # computing residual vector
     n = M-1  # number of combinations for different c-profiles
 
-    RR = np.array([cc[j] - ccComp[j][6:] for j in range(1, M)]).T
+    # RR = np.array([cc[j] - ccComp[j][6:] for j in range(1, M)]).T
+    RR = np.array([cc_norm[j] - ccComp[j][6:] for j in range(1, M)]).T
+
 
     # calculating vector of residuals
     RRn = RR.reshape(RR.size)  # residual vector contains all deviations
@@ -357,7 +376,8 @@ def optimization(DRange, DSol, FRange, tdRange, bnds, cc, xx, tt, dfParams=None,
                           bc=bc, dx_dist=dx_dist, dx_width=dx_width, DSol=DSol,
                           verb=funcVerb, alpha=alpha, dfParams=dfParams)
 
-    initVal = np.concatenate((DRange*np.ones(1), FRange, tdRange, c_bulk_range))
+    # initVal = np.concatenate((DRange*np.ones(1), FRange, tdRange, c_bulk_range))
+    initVal = c_bulk_range
     # running freely with standart termination conditions
     result = op.least_squares(optimize, initVal, bounds=bnds,
                               max_nfev=None, verbose=scpVerb)
@@ -369,6 +389,8 @@ def main():
     # reading input and setting up analysis
     (bc_mode, dim, verbosity, Runs, ana, deltaX, c0, xx, cc, tt, bnds, FInit,
      DInit, alpha) = io.startUp()
+
+    # xx, cc = data[:, 0], np.c_[data[:, 1], data[:, 26], data[:, 51], data[:, 76], data[:, 99]]
 
     # NOTE: settting DSol here
     DSol = 55
@@ -408,27 +430,31 @@ def main():
     # overriding bounds for custom set of parameters
     DBound = 1000
     FBound = 20
-    params = 2  # only two values for D, F
+    params = 0  # only two values for D, F
+    # NOTE: try estimating only normalization factors for fixed D, F
+
+    # bndsDUpper = np.ones(1)*DBound
+    # bndsFUpper = np.ones(params)*FBound
+    # bndsDLower = np.zeros(1)
+    # bndsFLower = np.ones(params)*(-FBound)
+    # # bounds for interface position and layer thickness zero and max x position
+    # tdBoundsLower = np.zeros(2)
+    # tdBoundsUpper = np.ones(2)*np.max(xx)
     # NOTE: now also fitting average concentration in bulk
     # in order to get normalization factor for each profile
-
-    bndsDUpper = np.ones(1)*DBound
-    bndsFUpper = np.ones(params)*FBound
-    bndsDLower = np.zeros(1)
-    bndsFLower = np.ones(params)*(-FBound)
-    # bounds for interface position and layer thickness zero and max x position
-    tdBoundsLower = np.zeros(2)
-    tdBoundsUpper = np.ones(2)*np.max(xx)
-    # bounds for normalization
-    norm_c_bulk_upper = np.ones(N)  # value between 0-1 as c is normalized
+    norm_c_bulk_upper = np.ones(N)*10  # value between 0-1 as c is normalized
     norm_c_bulk_lower = np.zeros(N)
-    FInit = np.zeros(2)
-    DInit = (np.random.rand(Runs)*DBound)
+    # FInit = np.zeros(2)
+    # DInit = (np.random.rand(Runs)*DBound)
     # order is [t, d], set boundary initially at x = 50
-    tdInit = np.array([50, deltaX*3])
-    norm_c_bulk_init = np.ones(N)*0.8  # start with c_bulk = 1
-    bnds = (np.concatenate((bndsDLower, bndsFLower, tdBoundsLower, norm_c_bulk_lower)),
-            np.concatenate((bndsDUpper, bndsFUpper, tdBoundsUpper, norm_c_bulk_upper)))
+    # tdInit = np.array([50, deltaX*3])
+    FInit, tdInit, DInit = None, None, np.array([0])
+    Runs = 1
+    norm_c_bulk_init = np.ones(N)*0.5  # start with c_bulk = 1
+    # bnds = (np.concatenate((bndsDLower, bndsFLower, tdBoundsLower, norm_c_bulk_lower)),
+    #         np.concatenate((bndsDUpper, bndsFUpper, tdBoundsUpper, norm_c_bulk_upper)))
+    bnds = (norm_c_bulk_lower,
+            norm_c_bulk_upper)
 
     # custom x-vector, only for analysis and plotting
     xx = np.arange(c0.size)
