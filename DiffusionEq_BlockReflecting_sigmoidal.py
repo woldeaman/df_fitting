@@ -11,6 +11,7 @@ import functools as ft
 import scipy.optimize as op
 import scipy.special as sp
 import plottingScripts as ps
+import xlsxwriter as xl
 import os
 import sys
 
@@ -18,7 +19,7 @@ startTime = time.time()
 
 
 def analysis(result, xx_DF, dx_dist, dfParams=None, dx_width=None, c0=None, xx_tot=None,
-             xx=None, cc=None, tt=None, deltaX=None, plot=False, per=0.1, alpha=0,
+             xx=None, cc=None, tt=None, deltaX=None, plot=False, per=1, alpha=0,
              bc='reflective', savePath=None):
     '''
     Function analyses results from ls-optimization,
@@ -94,6 +95,9 @@ def analysis(result, xx_DF, dx_dist, dfParams=None, dx_width=None, c0=None, xx_t
          FSTD_pre[1])**2) for x in xx_DF])
     # now keeping fixed D, F in first 6 bins
     DSTD, FSTD = fp.computeDF(DSTD_pre, FSTD_pre, shape=segments)
+    # standart deviations of sigmoidal parameters
+    t_STD, d_STD = np.std(np.array([result[indices[i]].x[dfParams*2:]
+                                    for i in range(nbr)]), axis=0)
 
     # gathering best D and F for computation of profiles
     D_best_pre = result[indices[0]].x[:dfParams]
@@ -166,9 +170,53 @@ def analysis(result, xx_DF, dx_dist, dfParams=None, dx_width=None, c0=None, xx_t
         ps.plotDF(xx, D_best, F_best, save=True, style='.--', name='bestDF',
                   path=savePath, xticks=xlabels)
 
-    # print results for source term
-    # k = result[indices[0]].x[-1]
-    # print('Source term for laser depletion determined as: %.2f [con/s]' % float(k/10))
+    # saving data to excel spreadsheet
+    workbook = xl.Workbook(savePath+'results.xlsx')
+    worksheet = workbook.add_worksheet()
+    bold = workbook.add_format({'bold': True})
+    # writing headers
+    worksheet.write('A1', 'D_sol_avg [µm^2/s]', bold)
+    worksheet.write('B1', 'D_sol_best [µm^2/s]', bold)
+    worksheet.write('C1', 'D_muc_avg [µm^2/s]', bold)
+    worksheet.write('D1', 'D_muc_best [µm^2/s]', bold)
+    worksheet.write('E1', 'F_muc_avg [kT]', bold)
+    worksheet.write('F1', 'F_muc_best [kT]', bold)
+    worksheet.write('G1', 't_D_avg [µm]', bold)
+    worksheet.write('H1', 't_D_best [µm]', bold)
+    worksheet.write('I1', 't_F_avg [µm]', bold)
+    worksheet.write('J1', 't_F_best [µm]', bold)
+    worksheet.write('K1', 'd_D_avg [µm]', bold)
+    worksheet.write('L1', 'd_D_best [µm]', bold)
+    worksheet.write('M1', 'd_F_avg [µm]', bold)
+    worksheet.write('N1', 'd_F_best [µm]', bold)
+    worksheet.write('O1', 'min E [+/- µM]', bold)
+    # writing entries
+    # D_muc/D_sol and F_muc/F_sol are the corresponding parameters of sigmoidal
+    # functions, does not neccesseraly have to be the value of D and F there,
+    # because profile could be shaped to not reach plateau there !
+    worksheet.write('A2', '%.2f +/- %.2f' % (D_pre[0], DSTD_pre[0]))
+    worksheet.write('B2', '%.2f' % D_best_pre[0])
+    worksheet.write('C2', '%.2f +/- %.2f' % (D_pre[-1], DSTD_pre[-1]))
+    worksheet.write('D2', '%.2f' % D_best_pre[-1])
+    worksheet.write('E2', '%.2f +/- %.2f' % (F_pre[-1], FSTD_pre[-1]))
+    worksheet.write('F2', '%.2f' % F_best_pre[-1])
+    worksheet.write('G2', '%.2f +/- %.2f' % (t_mean,
+                                             t_STD))
+    worksheet.write('H2', '%.2f' % t_best)
+    worksheet.write('I2', '%.2f +/- %.2f' % (t_mean,
+                                             t_STD))
+    worksheet.write('J2', '%.2f' % t_best)
+    worksheet.write('K2', '%.2f +/- %.2f' % (d_mean,
+                                             d_STD))
+    worksheet.write('L2', '%.2f' % d_best)
+    worksheet.write('M2', '%.2f +/- %.2f' % (d_mean,
+                                             d_STD))
+    worksheet.write('N2', '%.2f' % d_best)
+    worksheet.write('O2', '%.2f' % Error[indices[0]])
+
+    # adjusting cell widths
+    worksheet.set_column(0, 15, len('D_sol_best [µm^2/s]'))
+    workbook.close()
 
 
 # function for computation of residuals, given to optimization function as
@@ -377,7 +425,7 @@ def main():
 
     analysis(np.array(results), bc=bc_mode, c0=c0, xx_DF=xx_DF, xx=xx, cc=cc,
              tt=tt, dfParams=params, deltaX=deltaXX, alpha=alpha, plot=True,
-             per=0.1, dx_dist=dxx_dist, dx_width=dxx_width, xx_tot=x_tot)
+             per=1, dx_dist=dxx_dist, dx_width=dxx_width, xx_tot=x_tot)
 
     # returns number of runs in order to compute average time per run
     return Runs
