@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib as mpl
+import mpltex  # for acs style figures
 # from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import numpy as np
 import sys
@@ -337,3 +338,14 @@ def plotBlock(xx, cc, ccRes, tt, t_sig=None, locs=[0, 2], save=False, path=None,
         plt.savefig(path+'%s.pdf' % name, bbox_inches='tight')
     else:
         plt.show()
+
+
+@mpltex.acs_decorator  # making acs-style figures
+def plot_average_bulk_concentration(c_avg_bulk, tt, savePath):
+    """Plot fitted average bulk concentration for each profile."""
+    # make plot
+    plt.figure()
+    plt.plot(tt/60, c_avg_bulk, 'ko--')
+    plt.xlabel('Timepoint [min]')
+    plt.ylabel('$\\overline{c_{bulk}}$')
+    plt.savefig(savePath+'c_bulk.pdf', bbox_inches='tight')
