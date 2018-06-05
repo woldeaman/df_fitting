@@ -425,7 +425,7 @@ def main():
 
     analysis(np.array(results), bc=bc_mode, c0=c0, xx_DF=xx_DF, xx=xx, cc=cc,
              tt=tt, dfParams=params, deltaX=deltaXX, alpha=alpha, plot=True,
-             per=1, dx_dist=dxx_dist, dx_width=dxx_width, xx_tot=x_tot)
+             per=0.1, dx_dist=dxx_dist, dx_width=dxx_width, xx_tot=x_tot)
 
     # returns number of runs in order to compute average time per run
     return Runs
