@@ -100,7 +100,7 @@ def analysis(result, xx_DF, xx, cc, df_result, tt, dx_dist, dx_width, deltaX):
     # plotting profiles
     t_newX_coords = int(t_sig/abs(xx_DF[0]-xx_DF[1]) + 6)
     ps.plotBlock(xx, cc_scale, ccRes, tt, t_newX_coords, locs=[1, 3],
-                 save=True, path=savePath, plt_profiles='all', end=None, xticks=xlabels)
+                 save=True, path=savePath, plt_profiles=15, end=None, xticks=xlabels)
     ps.plotDF(xx, D, F, save=True, style='.--', name='DF',
               path=savePath, xticks=xlabels)
     ps.plot_average_bulk_concentration(c_bulk_mean, tt[1:], savePath)
@@ -176,9 +176,9 @@ def main():
      DInit, alpha) = io.startUp()
 
     # NOTE: set values from first fit here
-    DSol, DGel = 55, 37.65
-    FGel = 0.92
-    t_sig, d_sig = 165.65, 5.03
+    DSol, DGel = 55, 35.26
+    FGel = 0.98
+    t_sig, d_sig = 166.74, 4.47
     DF_result = [DSol, DGel, FGel, t_sig, d_sig]
     # ------------------------- discretization ------------------------ #
     # length of the different segments for computation
