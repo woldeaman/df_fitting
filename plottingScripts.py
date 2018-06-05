@@ -345,7 +345,7 @@ def plot_average_bulk_concentration(c_avg_bulk, tt, savePath):
     """Plot fitted average bulk concentration for each profile."""
     # make plot
     plt.figure()
-    plt.plot(tt/60, c_avg_bulk, 'ko--')
+    plt.plot(tt/60, c_avg_bulk, 'k-')
     plt.xlabel('Timepoint [min]')
     plt.ylabel('$\\overline{c_{bulk}}$')
     plt.savefig(savePath+'c_bulk.pdf', bbox_inches='tight')
