@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # implemented fokker-planck equation in 1D for
 # # use this for matplotlib on the cluster
-import matplotlib.pyplot as plt
 # matplotlib.use('Agg')
 import numpy as np
 import time
@@ -65,7 +64,7 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
     #                                    for i in range(nbr)]), axis=0)
     # c_bulk_mean = np.mean(np.array([result[indices[i]].x[5:]
     #                                 for i in range(nbr)]), axis=0)
-    c_bulk_mean = np.mean(np.array([result[indices[i]].x
+    c_norm_mean = np.mean(np.array([result[indices[i]].x
                                     for i in range(nbr)]), axis=0)
     # D_mean_pre = np.array([fp.sigmoidalDF(D_pre, t_mean,
     #                                       d_mean, x) for x in xx_DF])
@@ -103,7 +102,7 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
     #      FSTD_pre[1])**2) for x in xx_DF])
     # c_bulk_STD = np.std(np.array([result[indices[i]].x[5:]
     #                               for i in range(nbr)]), axis=0)
-    c_bulk_STD = np.std(np.array([result[indices[i]].x
+    c_norm_STD = np.std(np.array([result[indices[i]].x
                                   for i in range(nbr)]), axis=0)
 
     # now keeping fixed D, F in first 6 bins
@@ -116,7 +115,7 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
     # F_best_pre = F_best_preNoGauge - F_best_preNoGauge[0]
     # t_best, d_best = result[indices[0]].x[3:5]
     # c_bulk_best = result[indices[0]].x[5:]
-    c_bulk_best = result[indices[0]].x
+    c_norm_best = result[indices[0]].x
     F_best_pre, D_best_pre, t_best, d_best = [0, 0.98], [55, 35.26], 166.74, 4.47
     D_best = np.array([fp.sigmoidalDF(D_best_pre, t_best, d_best, x) for x in xx_DF])
     F_best = np.array([fp.sigmoidalDF(F_best_pre, t_best, d_best, x) for x in xx_DF])
@@ -129,26 +128,22 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
 
     # computing concentration profiles for best D and F
     ccRes = np.array([fp.calcC(cc[0], tt[j], W=W, bc=bc) for j in range(M)]).T
-    # computing normalized concentration profiles
-    # x_tot = 1780  # total length of system in µm
-    # length_bulk = x_tot - np.max(xx)
-    # k_norm_mean = c_bulk_mean*length_bulk/deltaX[1]
-    # k_norm_best = c_bulk_best*length_bulk/deltaX[1]
-    # norm_zero = cc[0][0]/(np.sum(dx_width*cc[0]))  # at t = 0 c_bulk = 1
-    #
-    # # gathering fit parameters for normalization
-    # c_tot_mean = [deltaX[1] * (k + np.sum(c)) for c, k in zip(cc[1:], k_norm_mean)]
-    # c_tot_best = [deltaX[1] * (k + np.sum(c)) for c, k in zip(cc[1:], k_norm_best)]
-
-    # cc_best, cc_mean = [cc[0]], [cc[0]]
-    # for c_b, c_m, c_og in zip(c_tot_best, c_tot_mean, cc[1:]):
-    #     cc_best.append(c_og/(c_b*norm_zero))
-    #     cc_mean.append(c_og/(c_m*norm_zero))
 
     cc_best, cc_mean = [cc[0]], [cc[0]]
-    for c_b, c_m, c_og in zip(c_bulk_best, c_bulk_mean, cc[1:]):
+    for c_b, c_m, c_og in zip(c_norm_best, c_norm_mean, cc[1:]):
         cc_best.append(c_og*c_b)
         cc_mean.append(c_og*c_m)
+
+    x_tot = 1780  # total length of system in µm
+    length_bulk = x_tot - np.max(xx_DF)
+    # computing fitted average bulk concentration
+    c_tot = np.sum(dx_width*cc[0])  # total amount from c0 profile
+    c_amount_best = [deltaX[1]*np.sum(c) for c in cc_best[1:]]
+    c_amount_mean = [deltaX[1]*np.sum(c) for c in cc_mean[1:]]
+    c_bulk_best = [(c_tot - c_am)/length_bulk for c_am in c_amount_best]
+    c_bulk_mean = [(c_tot - c_am)/length_bulk for c_am in c_amount_mean]
+    # error from gauß error propagation
+    c_bulk_STD = [c_norm_STD*(deltaX[1]*np.sum(c_og))/length_bulk for c_og in cc[1:]]
     # -------------------------- loading results --------------------------- #
 
     # --------------------------- saving data ------------------------------- #
@@ -280,29 +275,16 @@ def resFun(df, DSol, cc, xx, tt, dfParams, deltaX=1, dx_dist=None, dx_width=None
 
     # gathering D and F from non LSQ algorithm
     # DF parameters to be optimized D2, F1, F2, t_D, d_D, t_F, d_F
-    # d = df[0]
-    # d = [DSol, d]
-    # f = df[1:3]  # letting F completely free
-    d = [55, 35.26]  # NOTE: fixing D, F
-    f = [0, 0.98]  # letting F completely free
+    d = df[0]
+    d = [DSol, d]
+    f = df[1:3]  # letting F completely free
 
     # computing sigmoidal d and f profiles
-    # t_sig, d_sig = df[3], df[4]
-    t_sig, d_sig = 166.74, 4.47  # NOTE: also fix sigmoid parameters
+    t_sig, d_sig = df[3], df[4]
     D = np.array([fp.sigmoidalDF(d, t_sig, d_sig, x) for x in xx])
     F = np.array([fp.sigmoidalDF(f, t_sig, d_sig, x) for x in xx])
 
     # average concentration in bulk related to normalization
-    # x_tot = 1780  # total length of system in µm
-    # length_bulk = x_tot - np.max(xx)
-    # # c_avg = df[5:]  # fitting mean concentration in bulk
-    # c_avg = df  # fitting mean concentration in bulk
-    # k_norm = c_avg*length_bulk/deltaX[1]
-    #
-    # # gathering fit parameters for normalization
-    # c_tot = [deltaX[1] * (k + np.sum(c)) for c, k in zip(cc[1:], k_norm)]
-    # norm_zero = cc[0][0]/(np.sum(dx_width*cc[0]))  # at t = 0 c_bulk = 1
-    # cc[1:] = [c/(c_t*norm_zero) for c, c_t in zip(cc[1:], c_tot)]
     cc_norm = [cc[0]]+[c*norm for c, norm in zip(cc[1:], df)]
 
     # now keeping fixed D, F in first 6 bins
@@ -390,7 +372,8 @@ def main():
     (bc_mode, dim, verbosity, Runs, ana, deltaX, c0, xx, cc, tt, bnds, FInit,
      DInit, alpha) = io.startUp()
 
-    # xx, cc = data[:, 0], np.c_[data[:, 1], data[:, 26], data[:, 51], data[:, 76], data[:, 99]]
+    # xx, cc = data[:, 0], np.c_[data[:, 1], data[:, 11], data[:, 21], data[:, 31], data[:, 41],
+                               # data[:, 51], data[:, 61], data[:, 71], data[:, 81], data[:, 91], data[:, 100]]
 
     # NOTE: settting DSol here
     DSol = 55
@@ -433,28 +416,26 @@ def main():
     params = 0  # only two values for D, F
     # NOTE: try estimating only normalization factors for fixed D, F
 
-    # bndsDUpper = np.ones(1)*DBound
-    # bndsFUpper = np.ones(params)*FBound
-    # bndsDLower = np.zeros(1)
-    # bndsFLower = np.ones(params)*(-FBound)
-    # # bounds for interface position and layer thickness zero and max x position
-    # tdBoundsLower = np.zeros(2)
-    # tdBoundsUpper = np.ones(2)*np.max(xx)
+    bndsDUpper = np.ones(1)*DBound
+    bndsFUpper = np.ones(params)*FBound
+    bndsDLower = np.zeros(1)
+    bndsFLower = np.ones(params)*(-FBound)
+    # bounds for interface position and layer thickness zero and max x position
+    tdBoundsLower = np.zeros(2)
+    tdBoundsUpper = np.ones(2)*np.max(xx)
     # NOTE: now also fitting average concentration in bulk
     # in order to get normalization factor for each profile
     norm_c_bulk_upper = np.ones(N)*10  # value between 0-1 as c is normalized
     norm_c_bulk_lower = np.zeros(N)
-    # FInit = np.zeros(2)
-    # DInit = (np.random.rand(Runs)*DBound)
+    FInit = np.zeros(2)
+    DInit = (np.random.rand(Runs)*DBound)
     # order is [t, d], set boundary initially at x = 50
-    # tdInit = np.array([50, deltaX*3])
+    tdInit = np.array([50, deltaX*3])
     FInit, tdInit, DInit = None, None, np.array([0])
     Runs = 1
     norm_c_bulk_init = np.ones(N)*0.5  # start with c_bulk = 1
-    # bnds = (np.concatenate((bndsDLower, bndsFLower, tdBoundsLower, norm_c_bulk_lower)),
-    #         np.concatenate((bndsDUpper, bndsFUpper, tdBoundsUpper, norm_c_bulk_upper)))
-    bnds = (norm_c_bulk_lower,
-            norm_c_bulk_upper)
+    bnds = (np.concatenate((bndsDLower, bndsFLower, tdBoundsLower, norm_c_bulk_lower)),
+            np.concatenate((bndsDUpper, bndsFUpper, tdBoundsUpper, norm_c_bulk_upper)))
 
     # custom x-vector, only for analysis and plotting
     xx = np.arange(c0.size)
