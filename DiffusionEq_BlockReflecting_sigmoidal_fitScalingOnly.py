@@ -1,7 +1,8 @@
 """Fitting also normalization of profiles."""
 # -*- coding: utf-8 -*-
 # implemented fokker-planck equation in 1D for
-# # use this for matplotlib on the cluster
+# use this for matplotlib on the cluster
+# import matplotlib
 # matplotlib.use('Agg')
 import numpy as np
 import time
