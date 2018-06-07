@@ -14,8 +14,70 @@ import plottingScripts as ps
 import xlsxwriter as xl
 import os
 import sys
+startTime = time.time()  # start measuring run time
 
-startTime = time.time()
+
+def initialize_optimization(runs, params, n_profiles, xx, DMax=1000, FMax=20):
+    """Set up bounds and start values for non-linear fit.""""
+    # gather discretization
+    dx = xx[1] - xx[0]
+
+    # set D, F bounds
+    bnds_d_up = np.ones(params)*DMax
+    bnds_f_up = np.ones(params)*FMax
+    bnds_d_low = np.zeros(params)
+    bnds_f_low = np.ones(params)*(-FMax)
+    # bounds for interface position and layer thickness zero and max x position
+    bnds_td_up = np.ones(2)*np.max(xx)
+    bnds_td_low = np.zeros(2)
+    # bounds for scaling factors for each profile
+    bnds_scale_up = np.ones(n_profiles)*100  # setting this beetwen 0-100
+    bnds_scale_low = np.zeros(n_profiles)
+    # setting start values
+    f_init = np.zeros(params)
+    d_init = (np.random.rand(runs, params)*DMax)  # randomly choose D
+    td_init = np.array([50, dx*3])  # order is [t, d], set t initially to 50 µm
+    scale_init = np.ones(n_profiles)  # initially no scaling
+    # storing everything together
+    bnds = (np.concatenate((bndsDLower, bndsFLower, tdBoundsLower, norm_c_bulk_lower)),
+            np.concatenate((bndsDUpper, bndsFUpper, tdBoundsUpper, norm_c_bulk_upper)))
+    inits = [np.concatenate((d, f_init, td_init, scale_init)) for d in d_init]
+
+    return bnds, inits
+
+
+def build_zero_profile(cc, bins_bulk=6):
+    """Build profile at t=0 by extending measured concentration into bulk."""
+    # assuming c = const. in bulk at t = 0
+    c_const = cc[0, 0]  # extend first value through bulk
+    c0 = cc[:, 0]
+    c0 = np.concatenate((np.ones(bins_bulk)*c_const, c0))
+    cc = [c0] + [cc[:, i] for i in range(1, cc[0, :].size)]  # now with c0
+
+    return cc
+
+
+def discretization_Block(xx, dim, x_tot=1780):
+    """Set up discretization for measured system in Block experiments."""
+    # lenght of the different segments for computation
+    x_2 = np.max(xx)  # length of segment 2, gel phase
+    x_1 = x_tot - x_2  # length of segment 1, bulk phase
+
+    # defining discretization, in bulk first 4 bins with dx1, next 2 bins with dx2
+    dx2 = deltaX  # in gel
+    dx1 = (x_1-2.5*dx2)/3.5  # in bulk
+    deltaXX = [dx1, dx2]
+
+    # vectors for distance between bins dxx_dist and bin width dxx_width
+    dxx_width = np.concatenate((np.ones(3)*dx1, np.ones(1)*(dx1+dx2)/2,
+                                np.ones(2+dim)*dx2))  # used for concentration
+    # dxx_dist contains distance to previous bin, at first bin same dx is taken
+    dxx_dist = np.concatenate((np.ones(4)*dx1,  # used for WMatrix
+                               np.ones(2+dim+1)*dx2))
+    # dxx_dist has one element more than dxx_width because it's for WMatrix
+    # computation dx at i+1 is necccessary --> needed for last bin too
+
+    return dxx_dist, dxx_width
 
 def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
              dx_width=None, c0=None, xx=None, cc=None, tt=None, deltaX=None,
@@ -26,6 +88,8 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
     cc[i, :, :] at time tt[i] will be made, where D and F is averaged over
     top 'per' percent (standart is 0.1 - averaged over top 10%)
     '''
+    xx_DF = [np.sum(dxx_dist[6:i]) for i in range(6, dxx_dist.size-1)]
+
     # ----------------- setting working parameters --------------------- #
     # saving output in current results folder in current directory
     if savePath is None:
@@ -369,78 +433,23 @@ def optimization(DRange, DSol, FRange, tdRange, bnds, cc, xx, tt, dfParams=None,
 
 
 def main():
+    """Setup optimization and run it.""""
     # reading input and setting up analysis
-    (bc_mode, dim, verbosity, Runs, ana, deltaX, c0, xx, cc, tt, bnds, FInit,
-     DInit, alpha) = io.startUp()
+    verbosity, runs, ana, xx, cc, tt = io.startUp()
 
-    # NOTE: settting DSol here
-    DSol = 55
-    # ------------------------- discretization ------------------------ #
-    # lenght of the different segments for computation
-    x_tot = 1780  # total length of system in µm
-    x_2 = np.max(xx)  # length of segment 2
-    x_1 = x_tot - x_2  # length of segment 1
+    # gathering c-profile information
+    dim = cc[:, 0].size  # number of bins measured
+    n_profiles = cc[0, :].size-1  # number of profiles without c(t=0)
 
-    # defining different discretization widths
-    dx2 = deltaX  # in segment 2 and segment 3
-    dx1 = (x_1-2.5*dx2)/3.5  # discretization in segment x_1
-    # NOTE:
-    # discretizing segment 1 first 4 bins each at a distance of dx1
-    # and next two bins with a distance between them of dx2
-    deltaXX = [dx1, dx2]
+    # get variable discretization
+    dxx_dist, dxx_width = discretization_Block(xx, dim)
+    # build t=0 profile
+    cc = build_zero_profile(cc)
+    # set up optimization
+    params = 2  # only fit here Dsol, Fsol and Dmuc, Fmuc
+    bnds, inits = initialize_optimization(runs, params, n_profiles, xx)
 
-    # vectors for distance between bins dxx_dist and bin width dxx_width
-    # dxx_dist contains distance to previous bin, at first bin same dx is taken
-    dxx_dist = np.concatenate((np.ones(4)*dx1,  # used for WMatrix
-                               np.ones(2+dim+1)*dx2))
-    # this vector contains width of individual bins
-    dxx_width = np.concatenate((np.ones(3)*dx1, np.ones(1)*(dx1+dx2)/2,
-                                np.ones(2+dim)*dx2))  # used for concentration
-    # NOTE:
-    # dxx_dist has one element more than dxx_width because it for WMatrix
-    # computation dx at i+1 is necccessary --> needed for last bin too
-    # ------------------------- discretization ------------------------ #
-
-    # NOTE: building c0 profile, assume c0 const. in bulk
-    c_const = cc[0, 0]  # const. throughout bulk --> extend first value through bulk
-    c0 = cc[:, 0]
-    c0 = np.concatenate((np.ones(6)*c_const, c0))
-    cc = [c0] + [cc[:, i] for i in range(1, cc[0, :].size)]  # now with c0
-    N = len(cc)-1  # number of profiles without c0
-
-    # overriding bounds for custom set of parameters
-    DBound = 1000
-    FBound = 20
-    params = 2  # only two values for D, F
-    # NOTE: try estimating only normalization factors for fixed D, F
-
-    bndsDUpper = np.ones(params)*DBound
-    bndsFUpper = np.ones(params)*FBound
-    bndsDLower = np.zeros(params)
-    bndsFLower = np.ones(params)*(-FBound)
-    # bounds for interface position and layer thickness zero and max x position
-    tdBoundsLower = np.zeros(2)
-    tdBoundsUpper = np.ones(2)*np.max(xx)
-    # NOTE: now also fitting average concentration in bulk
-    # in order to get normalization factor for each profile
-    norm_c_bulk_upper = np.ones(N)*100
-    norm_c_bulk_lower = np.zeros(N)
-    FInit = np.zeros(params)
-    DInit = (np.random.rand(Runs, params)*DBound)
-    # order is [t, d], set boundary initially at x = 50
-    tdInit = np.array([50, deltaX*3])
-    # FInit, tdInit, DInit = None, None, np.array([0])
-    norm_c_bulk_init = np.ones(N)
-    bnds = (np.concatenate((bndsDLower, bndsFLower, tdBoundsLower, norm_c_bulk_lower)),
-            np.concatenate((bndsDUpper, bndsFUpper, tdBoundsUpper, norm_c_bulk_upper)))
-
-    # custom x-vector, only for analysis and plotting
-    xx = np.arange(c0.size)
-    # used to compute sigmoidal DF profiles, x<0 for first 6 bins
-    # first 6 bins have constant d, f
-    xx_DF = [np.sum(dxx_dist[6:i]) for i in range(6, dxx_dist.size-1)]
-    # ---------------- option for analysis only --------------------------- #
-    if ana:
+    if ana:  # make only analysis
         print('\nDoing analysis only.')
         res = np.load('result.npy')
         print('Overall %i runs have been performed.' % res.size)
@@ -449,16 +458,12 @@ def main():
                  dx_dist=dxx_dist, dx_width=dxx_width, DSol=DSol, xx_tot=x_tot)
         print('\nPlots have been made and data was extraced and saved.')
         sys.exit()
-    # ---------------- option for analysis only --------------------------- #
 
-    results = []
-    for i in range(Runs):
-        print('\nNow at run %i out of %i...\n' % (i+1, Runs))
+    results = []  # saving optimization results
+    for i, init in enumerate(inits):  # looping through all different start values
+        print('\nNow at run %i out of %i...\n' % (i+1, len(inits)))
         try:
-            results.append(optimization(DRange=DInit[i, :],
-                                        FRange=FInit, tdRange=tdInit,
-                                        c_bulk_range=norm_c_bulk_init,
-                                        dfParams=params, dx_dist=dxx_dist,
+            results.append(optimization(start_values=init, dx_dist=dxx_dist,
                                         dx_width=dxx_width, bnds=bnds, cc=cc,
                                         xx=xx_DF, tt=tt, deltaX=deltaXX, c0=c0,
                                         verb=verbosity, bc=bc_mode,
