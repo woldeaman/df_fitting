@@ -31,7 +31,7 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
     np.savetxt(savePath+'concentrationRes.txt', ccRes, delimiter=',',
                header='Numerically computed concentration profiles\n'+header_cons)
     # saving averaged DF
-    np.savetxt(savePath+'DF_avg.txt', np.c_[D_mean, D_std, F_mean, F_std],
+    np.savetxt(savePath+'DF_avg.txt', np.c_[D_mean, D_std, F_mean-F_mean[0], F_std],
                delimiter=',',
                header=('Diffusivity and free energy profiles from analysis\n'
                        'cloumn1: average diffusivity [micro_m^2/s]\n'
@@ -39,7 +39,7 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
                        'cloumn3: average free energy [k_BT]\n'
                        'cloumn4: stdev of free energy [+/- k_BT]'))
     # saving best DF
-    np.savetxt(savePath+'DF_best.txt', np.c_[D_best, F_best],
+    np.savetxt(savePath+'DF_best.txt', np.c_[D_best, F_best-F_best[0]],
                delimiter=',',
                header=('Diffusivity and free energy profiles with lowest '
                        'error from analysis\n'
@@ -61,17 +61,17 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
     # reconstruct original x-vector
     length_bulk, dx = (x_tot - np.max(xx)), (xx[1] - xx[0])
     # for labeling the x-axis correctly
-    xx_dummy = np.arange(ccRes[0].size)
+    xx_dummy = np.arange(ccRes[:, 0].size)
     xlabels = [[xx_dummy[0]]+[x for x in xx_dummy[6::5]],
                [-length_bulk]+[i*5*dx for i in range(xx_dummy[6::5].size)]]
     # plotting profiles
     t_newX_coords = int(t_best/dx + 6)
-    ps.plotBlock(xx, cc_scaled_best, ccRes, tt, t_newX_coords, locs=[1, 3], save=True,
+    ps.plotBlock(xx_dummy, cc_scaled_best, ccRes, tt, t_newX_coords, locs=[1, 3], save=True,
                  path=savePath, plt_profiles='all', end=None, xticks=xlabels)
     # plotting averaged D and F
-    ps.plotDF(xx, D_mean, F_mean, D_STD=D_std, F_STD=F_std, save=True,
+    ps.plotDF(xx_dummy, D_mean, F_mean-F_mean[0], D_STD=D_std, F_STD=F_std, save=True,
               style='.--', path=savePath, xticks=xlabels)
-    ps.plotDF(xx, D_best, F_best, save=True, style='.--', name='bestDF',
+    ps.plotDF(xx_dummy, D_best, F_best-F_best[0], save=True, style='.--', name='bestDF',
               path=savePath, xticks=xlabels)
 
     # saving data to excel spreadsheet
@@ -100,10 +100,10 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
              best_params[4], best_params[5]]
 
     # writing entries, storing original parameters for sigmoidal curves
-    for i, avg, std in enumerate(zip(means, stdevs)):
-        worksheet.write('B%i' % (i+1), '%.2f +/- %.2f' % (avg, std))
+    for i, data in enumerate(zip(means, stdevs)):
+        worksheet.write('B%i' % (i+1), '%.2f +/- %.2f' % (data[0], data[1]))
     for i, best in enumerate(bests):
-        worksheet.write('D%i' % (i+1), '%.2f +/- %.2f' % best)
+        worksheet.write('D%i' % (i+1), '%.2f' % best)
     worksheet.write('B8', '%.2f' % np.min(errors))  # write also error
     # adjusting cell widths
     worksheet.set_column(0, 15, len('D_sol_best [µm^2/s]'))
@@ -300,7 +300,7 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, per=1):
         cc_mean.append(c_og*c_m)
     # compute fitted average bulk concentration
     c_bulk_best = compute_avg_c_bulk(cc_best, xx, dxx_width)
-    c_bulk_mean, c_bulk_std = compute_avg_c_bulk(cc_mean, xx, dxx_width)
+    c_bulk_mean = compute_avg_c_bulk(cc_mean, xx, dxx_width)
     # error from gauß error propagation
     c_bulk_std = compute_c_bulk_stdev(cc, scalings_std, xx)
 
@@ -344,7 +344,8 @@ def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, check=False):
 def optimization(init, bnds, xx, cc, tt, dxx_dist, dxx_width, verbosity=0):
     """Run one iteration of the non-linear optimization."""
     # reduce residual function to one argument in order to work with algorithm
-    optimize = ft.partial(resFun, xx, cc, tt, dxx_dist, dxx_width)
+    optimize = ft.partial(resFun, xx=xx, cc=cc, tt=tt, dxx_dist=dxx_dist,
+                          dxx_width=dxx_width)
 
     # running freely with standart termination conditions
     result = op.least_squares(optimize, init, bounds=bnds, verbose=verbosity)
@@ -355,7 +356,7 @@ def optimization(init, bnds, xx, cc, tt, dxx_dist, dxx_width, verbosity=0):
 def main():
     """Set up optimization and run it."""
     # reading input and setting up analysis
-    verbosity, runs, ana, xx, cc, tt = io.startUp()
+    verbosity, runs, ana, xx, cc, tt = io.startUp_slim()
     n_profiles = cc[0, :].size-1  # number of profiles without c(t=0)
 
     dxx_dist, dxx_width = discretization_Block(xx)  # get variable discretization
