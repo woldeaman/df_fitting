@@ -17,8 +17,200 @@ import sys
 startTime = time.time()  # start measuring run time
 
 
+def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
+              best_params, avg_params, std_params, D_mean, D_best, F_mean, F_best,
+              D_std, F_std, c_bulk_mean, c_bulk_std, c_bulk_best, top_percent,
+              savePath, x_tot=1780):
+    """Make plots and save analyzed data."""
+    # header for txt file in which concentration profiles will be saved
+    header_cons = ''
+    for i, t in enumerate(tt):
+        header_cons += ('column%i: c-profile [micro_M] for t_%i = %i min\n'
+                        % (i+2, i, int(t/60)))
+    # saving numerical profiles
+    np.savetxt(savePath+'concentrationRes.txt', ccRes, delimiter=',',
+               header='Numerically computed concentration profiles\n'+header_cons)
+    # saving averaged DF
+    np.savetxt(savePath+'DF_avg.txt', np.c_[D_mean, D_std, F_mean, F_std],
+               delimiter=',',
+               header=('Diffusivity and free energy profiles from analysis\n'
+                       'cloumn1: average diffusivity [micro_m^2/s]\n'
+                       'cloumn2: stdev of diffusivity [+/- micro_m^2/s]\n'
+                       'cloumn3: average free energy [k_BT]\n'
+                       'cloumn4: stdev of free energy [+/- k_BT]'))
+    # saving best DF
+    np.savetxt(savePath+'DF_best.txt', np.c_[D_best, F_best],
+               delimiter=',',
+               header=('Diffusivity and free energy profiles with lowest '
+                       'error from analysis\n'
+                       'cloumn1: diffusivity [micro_m^2/s]\n'
+                       'cloumn2: free energy [k_BT]'))
+
+    # saving Error of top 1% of runs
+    np.savetxt(savePath+'minError.txt', errors, delimiter=',',
+               header=('Minimal error for top %.2f %% runs.' % (top_percent*100)))
+    # saving fitted average bulk concentrations
+    np.savetxt(savePath+'c_bulk_avg.txt', np.c_[c_bulk_mean, c_bulk_std],
+               delimiter=',',
+               header=('Fitted bulk concentration, averaged over all runs.\n'
+                       'column1: average\n'
+                       'column2: standart deviation\n'))
+    np.savetxt(savePath+'c_bulk_best.txt', c_bulk_best, delimiter=',',
+               header=('Fitted bulk concentration for best run.'))
+
+    # reconstruct original x-vector
+    length_bulk, dx = (x_tot - np.max(xx)), (xx[1] - xx[0])
+    # for labeling the x-axis correctly
+    xx_dummy = np.arange(ccRes[0].size)
+    xlabels = [[xx_dummy[0]]+[x for x in xx_dummy[6::5]],
+               [-length_bulk]+[i*5*dx for i in range(xx_dummy[6::5].size)]]
+    # plotting profiles
+    t_newX_coords = int(t_best/dx + 6)
+    ps.plotBlock(xx, cc_scaled_best, ccRes, tt, t_newX_coords, locs=[1, 3], save=True,
+                 path=savePath, plt_profiles='all', end=None, xticks=xlabels)
+    # plotting averaged D and F
+    ps.plotDF(xx, D_mean, F_mean, D_STD=D_std, F_STD=F_std, save=True,
+              style='.--', path=savePath, xticks=xlabels)
+    ps.plotDF(xx, D_best, F_best, save=True, style='.--', name='bestDF',
+              path=savePath, xticks=xlabels)
+
+    # saving data to excel spreadsheet
+    workbook = xl.Workbook(savePath+'results.xlsx')
+    worksheet = workbook.add_worksheet()
+    bold = workbook.add_format({'bold': True})
+    # writing headers
+    worksheet.write('A1', 'D_sol_avg [µm^2/s]', bold)
+    worksheet.write('C1', 'D_sol_best [µm^2/s]', bold)
+    worksheet.write('A2', 'D_muc_avg [µm^2/s]', bold)
+    worksheet.write('C2', 'D_muc_best [µm^2/s]', bold)
+    worksheet.write('A3', 'F_muc_avg [kT]', bold)
+    worksheet.write('C3', 'F_muc_best [kT]', bold)
+    worksheet.write('A4', 't_avg [µm]', bold)
+    worksheet.write('C4', 't_best [µm]', bold)
+    worksheet.write('A5', 'd_avg [µm]', bold)
+    worksheet.write('C5', 'd_best [µm]', bold)
+    worksheet.write('A8', 'min Err. [+/- µM]', bold)
+
+    # gather original parameters
+    means = [avg_params[0], avg_params[1], (avg_params[3]-avg_params[2]),
+             avg_params[4], avg_params[5]]
+    stdevs = [std_params[0], std_params[1], (std_params[3]+std_params[2]),
+              std_params[4], std_params[5]]
+    bests = [best_params[0], best_params[1], (best_params[3]-std_params[2]),
+             best_params[4], best_params[5]]
+
+    # writing entries, storing original parameters for sigmoidal curves
+    for i, avg, std in enumerate(zip(means, stdevs)):
+        worksheet.write('B%i' % (i+1), '%.2f +/- %.2f' % (avg, std))
+    for i, best in enumerate(bests):
+        worksheet.write('D%i' % (i+1), '%.2f +/- %.2f' % best)
+    worksheet.write('B8', '%.2f' % np.min(errors))  # write also error
+    # adjusting cell widths
+    worksheet.set_column(0, 15, len('D_sol_best [µm^2/s]'))
+    workbook.close()
+
+
+def compute_c_bulk_stdev(cc_original, scalings_std, xx, x_tot=1780):
+    """Compute standart deviation for fitted average c_bulk."""
+    dx = xx[1] - xx[0]  # discretization width
+    length_bulk = x_tot - np.max(xx)  # length of bulk phase
+    # error from gauß error propagation
+    c_bulk_std = [std*(dx*np.sum(c_og))/length_bulk
+                  for std, c_og in zip(scalings_std, cc_original[1:])]
+    return c_bulk_std
+
+
+def compute_avg_c_bulk(cc_scaled, xx, dxx_width, x_tot=1780):
+    """Compute corresponding average bulk concentration from fitted scalings."""
+    dx = xx[1] - xx[0]  # discretization width
+    length_bulk = x_tot - np.max(xx)  # length of bulk phase
+    c_tot = np.sum(dxx_width*cc_scaled[0])  # total amount from c(t=0) profile
+
+    # compute total amount of concentration for profiles
+    c_amount = [dx * np.sum(c) for c in cc_scaled[1:]]
+    c_bulk_avg = [(c_tot - c_am)/length_bulk for c_am in c_amount]
+
+    return c_bulk_avg
+
+
+def average_data(result, xx, cc, top_percent=1):
+    """Gather and average data from all optimization runs."""
+    # number if top x% of the runs
+    nbr = np.ceil(top_percent*len(result)).astype(int)
+
+    # used to later compute normalized error
+    n_profiles = len(cc)  # number of profiles
+    bins = cc[1].size  # number of bins
+    combis = n_profiles-1  # number of combinations for different c-profiles
+
+    # loading error values, factor two, because of cost function definition
+    error = [np.sqrt(2*res.cost / (bins*combis)) for res in result]
+    indices = np.argsort(error)  # for sorting according to error
+
+    # gathering mean for all parameters
+    averages = np.mean([result[idx].x for idx in indices[:nbr]], axis=0)
+    stdevs = np.std([result[idx].x for idx in indices[:nbr]], axis=0)
+    best_results = result[indices[0]].x
+
+    # splitting up parameters to compute D, F profiles
+    D_mean, F_mean, t_mean, d_mean = averages[:2], averages[2:4], averages[4], averages[5]
+    D_std, F_std = stdevs[:2], stdevs[2:4]
+    D_best, F_best, t_best, d_best = best_results[:2], best_results[2:4], best_results[4], best_results[5]
+
+    # post processing D, F profiles
+    D_mean_pre = np.array([fp.sigmoidalDF(D_mean, t_mean, d_mean, x) for x in xx])
+    F_mean_pre = np.array([fp.sigmoidalDF(F_mean, t_mean, d_mean, x) for x in xx])
+    D_best = np.array([fp.sigmoidalDF(D_best, t_best, d_best, x) for x in xx])
+    F_best = np.array([fp.sigmoidalDF(F_best, t_best, d_best, x) for x in xx])
+    segments = np.concatenate((np.zeros(6), np.arange(xx.size))).astype(int)
+    D_mean, F_mean = fp.computeDF(D_mean_pre, F_mean_pre, shape=segments)
+    D_best, F_best = fp.computeDF(D_best, F_best, shape=segments)
+
+    # computing errors using error propagation for Dsol, Dmuc or Fsol, Fmuc
+    # contributions of t, d neglected for now...
+    DSTD_pre = np.array([np.sqrt(((0.5 - sp.erf((x-t_mean)/(np.sqrt(2)*d_mean))/2) *
+                                  D_std[0])**2 + ((0.5 + sp.erf((x-t_mean)/(np.sqrt(2)*d_mean))/2) *
+                                                  D_std[1])**2) for x in xx])
+    FSTD_pre = np.array([np.sqrt(((0.5 - sp.erf((x-t_mean)/(np.sqrt(2)*d_mean))/2) *
+                                  F_std[0])**2 + ((0.5 + sp.erf((x-t_mean)/(np.sqrt(2)*d_mean))/2) *
+                                                  F_std[1])**2) for x in xx])
+    # now keeping fixed stdev of D, F in first 6 bins
+    DSTD, FSTD = fp.computeDF(DSTD_pre, FSTD_pre, shape=segments)
+
+    return (best_results, averages, stdevs, F_best, D_best, t_best, d_best,
+            F_mean, D_mean, t_mean, d_mean, FSTD, DSTD, error)
+
+
+def cross_checking(W, cc, tt, dxx_width, dxx_dist):
+    """Check numerical model for conservation of concentration."""
+    # Column sum does not vanish anymore for variable binning, but equal
+    # positive and negative terms appear at binning transition --> total sum vanishes
+    if abs(np.sum((np.sum(W, 0)))) > 0.01:
+        print("WMatrix total sum does not vanish!\nMax is:",
+              np.max(np.sum(W, 0)), '\nFor each column:\n', np.sum(W, 0))
+        sys.exit()
+
+    # testing conservation of concentration
+    con = np.sum(cc[0]*dxx_width)
+    # compute profiles from c0 and do the same conservation check
+    ccComp = [fp.calcC(cc[0], t=t, W=W) for t in tt]
+
+    if np.any(np.array([abs(np.sum(c*dxx_width)-con)
+                        for c in ccComp]) > 0.01*con):
+        print('Error: Computed concentration '
+              'is not conserved in profiles: \n',
+              np.nonzero(np.array([abs(np.sum(c*dxx_width)-con)
+                                   for c in ccComp]) > 0.01*con))
+        print([np.sum(c*dxx_width) for c in ccComp], '\n')
+        print('concentration:\n', con)
+        print('WMatrix Size:\n', W.shape)
+        print('WMatrix Row Sum:\n', np.sum(W, 0))
+        print('WMatrix 2Sum:\n', np.sum(np.sum(W, 0)))
+        sys.exit()
+
+
 def initialize_optimization(runs, params, n_profiles, xx, DMax=1000, FMax=20):
-    """Set up bounds and start values for non-linear fit.""""
+    """Set up bounds and start values for non-linear fit."""
     # gather discretization
     dx = xx[1] - xx[0]
 
@@ -39,8 +231,8 @@ def initialize_optimization(runs, params, n_profiles, xx, DMax=1000, FMax=20):
     td_init = np.array([50, dx*3])  # order is [t, d], set t initially to 50 µm
     scale_init = np.ones(n_profiles)  # initially no scaling
     # storing everything together
-    bnds = (np.concatenate((bndsDLower, bndsFLower, tdBoundsLower, norm_c_bulk_lower)),
-            np.concatenate((bndsDUpper, bndsFUpper, tdBoundsUpper, norm_c_bulk_upper)))
+    bnds = (np.concatenate((bnds_d_low, bnds_f_low, bnds_td_low, bnds_scale_low)),
+            np.concatenate((bnds_d_up, bnds_f_up, bnds_td_up, bnds_scale_up)))
     inits = [np.concatenate((d, f_init, td_init, scale_init)) for d in d_init]
 
     return bnds, inits
@@ -57,16 +249,19 @@ def build_zero_profile(cc, bins_bulk=6):
     return cc
 
 
-def discretization_Block(xx, dim, x_tot=1780):
+def discretization_Block(xx, x_tot=1780):
     """Set up discretization for measured system in Block experiments."""
+    # original discretization
+    dx_og = xx[1] - xx[0]
+    dim = xx.size  # number of measured bins
+
     # lenght of the different segments for computation
     x_2 = np.max(xx)  # length of segment 2, gel phase
     x_1 = x_tot - x_2  # length of segment 1, bulk phase
 
     # defining discretization, in bulk first 4 bins with dx1, next 2 bins with dx2
-    dx2 = deltaX  # in gel
+    dx2 = dx_og  # in gel
     dx1 = (x_1-2.5*dx2)/3.5  # in bulk
-    deltaXX = [dx1, dx2]
 
     # vectors for distance between bins dxx_dist and bin width dxx_width
     dxx_width = np.concatenate((np.ones(3)*dx1, np.ones(1)*(dx1+dx2)/2,
@@ -79,372 +274,92 @@ def discretization_Block(xx, dim, x_tot=1780):
 
     return dxx_dist, dxx_width
 
-def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
-             dx_width=None, c0=None, xx=None, cc=None, tt=None, deltaX=None,
-             plot=False, per=1, alpha=0, bc='reflective', savePath=None):
-    '''
-    Function analyses results from ls-optimization,
-    if given comparison plots of results and original concentration profiles
-    cc[i, :, :] at time tt[i] will be made, where D and F is averaged over
-    top 'per' percent (standart is 0.1 - averaged over top 10%)
-    '''
-    xx_DF = [np.sum(dxx_dist[6:i]) for i in range(6, dxx_dist.size-1)]
 
-    # ----------------- setting working parameters --------------------- #
-    # saving output in current results folder in current directory
-    if savePath is None:
-        savePath = os.path.join(os.getcwd(), 'results/')
-        if not os.path.exists(savePath):
-            os.makedirs(savePath)
+def analysis(result, xx, cc, tt, dxx_dist, dxx_width, per=1):
+    """Analyze results from optimization runs."""
+    # create new folder to save results in
+    savePath = os.path.join(os.getcwd(), 'results/')
+    if not os.path.exists(savePath):
+        os.makedirs(savePath)
 
-    I = result.size  # number of different ls-opti runs
-    nbr = np.ceil(per*I).astype(int)  # number for top x% of the runs
-    M = len(cc)
+    # gather data from results objects
+    (best_results, averages, stdevs, F_best, D_best, t_best, d_best,
+     F_mean, D_mean, t_mean, d_mean, F_std, D_std, error) = average_data(result, xx, cc, per)
+    # fitted values for re-scaling concentration profiles
+    scalings_mean, scalings_std, scalings_best = averages[6:], stdevs[6:], best_results[6:]
 
-    N = cc[1].size  # number of bins
-    n = M-1  # number of combinations for different c-profiles
+    # computing rate matrix from best results
+    W = fp.WMatrixVar(D_best, F_best, start=4, end=None, deltaXX=dxx_dist, con=True)
+    # computing concentration profiles
+    ccRes = np.array([fp.calcC(cc[0], t, W=W) for t in tt]).T
 
-    if xx is None:
-        xx = np.arange(N)
-    if deltaX is None:
-        deltaX = abs(xx[0] - xx[1])
-    # ----------------- setting working parameters --------------------- #
-
-    # -------------------------- loading results --------------------------- #
-    # gathering data from simulations
-
-    # loading error values, factor two, because of cost function definition
-    Error = np.array([np.sqrt(2*result[i].cost / (n*N)) for i in range(I)])
-    indices = np.argsort(Error)  # for sorting according to error
-
-    # gathering mean of F and D for best x% of runs
-    D_pre = np.mean(np.array([result[indices[i]].x[:2]
-                              for i in range(nbr)]), axis=0)
-    # D_pre = [DSol, D_pre]
-    F_preNoGauge = np.mean(np.array([result[indices[i]].x[2:4]
-                                     for i in range(nbr)]), axis=0)
-    F_pre = F_preNoGauge - F_preNoGauge[0]
-    t_mean, d_mean = np.mean(np.array([result[indices[i]].x[4:6]
-                                       for i in range(nbr)]), axis=0)
-    c_norm_mean = np.mean(np.array([result[indices[i]].x[6:]
-                                    for i in range(nbr)]), axis=0)
-    # c_norm_mean = np.mean(np.array([result[indices[i]].x
-    #                                 for i in range(nbr)]), axis=0)
-    D_mean_pre = np.array([fp.sigmoidalDF(D_pre, t_mean,
-                                          d_mean, x) for x in xx_DF])
-    F_mean_pre = np.array([fp.sigmoidalDF(F_pre, t_mean,
-                                          d_mean, x) for x in xx_DF])
-
-    segments = np.concatenate((np.zeros(6), np.arange(len(xx_DF)))).astype(int)
-
-    # now keeping fixed D, F in first 6 bins
-    D_mean, F_mean = fp.computeDF(D_mean_pre, F_mean_pre, shape=segments)
-
-    # gathering standart deviation for top x% of runs
-    # computed from gauß errorpropagation for errors of D1, D2 or F1, F2
-    # contribution of t_D, d_D, t_F and d_F neglected for now
-    t_STD, d_STD = np.std(np.array([result[indices[i]].x[4:6]
-                                    for i in range(nbr)]), axis=0)
-    DSTD_pre = np.std(np.array([result[indices[i]].x[:2]
-                                for i in range(nbr)]), axis=0)
-    # DSTD_pre = [0, DSTD_pre]
-    FSTD_pre = np.std(np.array([result[indices[i]].x[2:4]
-                                for i in range(nbr)]), axis=0)
-    DSTD_pre = np.array([np.sqrt(
-        ((0.5 - sp.erf(
-            (x-t_mean)/(np.sqrt(2)*d_mean))/2) *
-         DSTD_pre[0])**2 +
-        ((0.5 + sp.erf(
-            (x-t_mean)/(np.sqrt(2)*d_mean))/2) *
-         DSTD_pre[1])**2) for x in xx_DF])
-    FSTD_pre = np.array([np.sqrt(
-        ((0.5 - sp.erf(
-            (x-t_mean)/(np.sqrt(2)*d_mean))/2) *
-         FSTD_pre[0])**2 +
-        ((0.5 + sp.erf(
-            (x-t_mean)/(np.sqrt(2)*d_mean))/2) *
-         FSTD_pre[1])**2) for x in xx_DF])
-    c_norm_STD = np.std(np.array([result[indices[i]].x[5:]
-                                  for i in range(nbr)]), axis=0)
-    # c_norm_STD = np.std(np.array([result[indices[i]].x
-    #                               for i in range(nbr)]), axis=0)
-
-    # now keeping fixed D, F in first 6 bins
-    DSTD, FSTD = fp.computeDF(DSTD_pre, FSTD_pre, shape=segments)
-
-    # gathering best D and F for computation of profiles
-    D_best_pre = result[indices[0]].x[:2]
-    # D_best_pre = [DSol, D_best_pre]
-    F_best_preNoGauge = result[indices[0]].x[2:4]
-    F_best_pre = F_best_preNoGauge - F_best_preNoGauge[0]
-    t_best, d_best = result[indices[0]].x[4:6]
-    c_norm_best = result[indices[0]].x[6:]
-    # c_norm_best = result[indices[0]].x
-    # F_best_pre, D_best_pre, t_best, d_best = [0, 0.98], [55, 35.26], 166.74, 4.47
-    D_best = np.array([fp.sigmoidalDF(D_best_pre, t_best, d_best, x) for x in xx_DF])
-    F_best = np.array([fp.sigmoidalDF(F_best_pre, t_best, d_best, x) for x in xx_DF])
-    # now keeping fixed D, F in first 6 bins
-    D_best, F_best = fp.computeDF(D_best, F_best, shape=segments)
-
-    # computing rate matrix
-    W = fp.WMatrixVar(D_best, F_best, start=4, end=None, deltaXX=dx_dist,
-                      con=True)
-
-    # computing concentration profiles for best D and F
-    ccRes = np.array([fp.calcC(cc[0], tt[j], W=W, bc=bc) for j in range(M)]).T
-
+    # compute re-scaled concentration profiles
     cc_best, cc_mean = [cc[0]], [cc[0]]
-    for c_b, c_m, c_og in zip(c_norm_best, c_norm_mean, cc[1:]):
+    for c_b, c_m, c_og in zip(scalings_best, scalings_mean, cc[1:]):
         cc_best.append(c_og*c_b)
         cc_mean.append(c_og*c_m)
-
-    x_tot = 1780  # total length of system in µm
-    length_bulk = x_tot - np.max(xx_DF)
-    # computing fitted average bulk concentration
-    c_tot = np.sum(dx_width*cc[0])  # total amount from c0 profile
-    c_amount_best = [deltaX[1]*np.sum(c) for c in cc_best[1:]]
-    c_amount_mean = [deltaX[1]*np.sum(c) for c in cc_mean[1:]]
-    c_bulk_best = [(c_tot - c_am)/length_bulk for c_am in c_amount_best]
-    c_bulk_mean = [(c_tot - c_am)/length_bulk for c_am in c_amount_mean]
+    # compute fitted average bulk concentration
+    c_bulk_best = compute_avg_c_bulk(cc_best, xx, dxx_width)
+    c_bulk_mean, c_bulk_std = compute_avg_c_bulk(cc_mean, xx, dxx_width)
     # error from gauß error propagation
-    c_bulk_STD = [c_norm_STD*(deltaX[1]*np.sum(c_og))/length_bulk for c_og in cc[1:]]
-    # -------------------------- loading results --------------------------- #
+    c_bulk_std = compute_c_bulk_stdev(cc, scalings_std, xx)
 
-    # --------------------------- saving data ------------------------------- #
-    # header for txt file in which concentration profiles will be saved
-    header_cons = ''
-    for i, t in enumerate(tt):
-        header_cons += ('column%i: c-profile [micro_M] for t_%i = %i min\n'
-                        % (i+2, i, int(t/60)))
-    # saving analyzed data for best results for plotting
-    np.savetxt(savePath+'concentrationRes.txt', np.c_[xx, ccRes],
-               delimiter=',',
-               header=('Numerically computed concentration profiles\n'
-                       'column1: x-distance [micro_m]\n'+header_cons))
-    # saving averaged DF
-    np.savetxt(savePath+'DF_avg.txt', np.c_[xx, D_mean, DSTD, F_mean, FSTD],
-               delimiter=',',
-               header=('Diffusivity and free energy profiles from analysis\n'
-                       'column1: x-distance [micro_m]\n'
-                       'cloumn2: average diffusivity [micro_m^2/s]\n'
-                       'cloumn3: stdev of diffusivity [+/- micro_m^2/s]\n'
-                       'cloumn4: average free energy [k_BT]\n'
-                       'cloumn5: stdev of free energy [+/- k_BT]'))
-    # saving best DF
-    np.savetxt(savePath+'DF_best.txt', np.c_[xx, D_best, F_best],
-               delimiter=',',
-               header=('Diffusivity and free energy profiles with lowest '
-                       'error from analysis\n'
-                       'column1: x-distance [micro_m]\n'
-                       'cloumn2: diffusivity [micro_m^2/s]\n'
-                       'cloumn3: free energy [k_BT]'))
-
-    # saving Error of top 1% of runs
-    np.savetxt(savePath+'minError.txt', Error[indices[:nbr]], delimiter=',',
-               header=('Minimal error for top %.2f %% runs.' % (per*100)))
-    np.savetxt(savePath+'c_bulk_avg.txt', np.c_[c_bulk_mean, c_bulk_STD],
-               delimiter=',',
-               header=('Fitted bulk concentration, averaged over all runs.\n'
-                       'column1: average\n'
-                       'column2: standart deviation\n'))
-    np.savetxt(savePath+'c_bulk_best.txt', c_bulk_best, delimiter=',',
-               header=('Fitted bulk concentration for best run.'))
-    # --------------------------- saving data ------------------------------- #
-
-    # ------------------------- plotting data ------------------------------- #
-    # reconstruct original x-vector
-    xx_og = [np.sum(dx_dist[7:i]) for i in range(6, dx_dist.size)]
-    x_0 = xx_tot - np.max(xx_og)
-    # for labeling the x-axis correctly
-    xlabels = [[xx[0]]+[x for x in xx[6::5]],
-               [-x_0]+[i*5*deltaX[1] for i in range(xx[6::5].size)]]
-    if plot:
-        # plotting profiles
-        t_newX_coords = int(t_best/abs(xx_DF[0]-xx_DF[1]) + 6)
-        ps.plotBlock(xx, cc_best, ccRes, tt, t_newX_coords, locs=[1, 3], save=True,
-                     path=savePath, plt_profiles='all', end=None, xticks=xlabels)
-        # plotting averaged D and F
-        ps.plotDF(xx, D_mean, F_mean, D_STD=DSTD, F_STD=FSTD, save=True,
-                  style='.--', path=savePath, xticks=xlabels)
-        ps.plotDF(xx, D_best, F_best, save=True, style='.--', name='bestDF',
-                  path=savePath, xticks=xlabels)
-
-    # saving data to excel spreadsheet
-    workbook = xl.Workbook(savePath+'results.xlsx')
-    worksheet = workbook.add_worksheet()
-    bold = workbook.add_format({'bold': True})
-    # writing headers
-    worksheet.write('A1', 'D_sol_avg [µm^2/s]', bold)
-    worksheet.write('B1', 'D_sol_best [µm^2/s]', bold)
-    worksheet.write('C1', 'D_muc_avg [µm^2/s]', bold)
-    worksheet.write('D1', 'D_muc_best [µm^2/s]', bold)
-    worksheet.write('E1', 'F_muc_avg [kT]', bold)
-    worksheet.write('F1', 'F_muc_best [kT]', bold)
-    worksheet.write('G1', 't_D_avg [µm]', bold)
-    worksheet.write('H1', 't_D_best [µm]', bold)
-    worksheet.write('I1', 't_F_avg [µm]', bold)
-    worksheet.write('J1', 't_F_best [µm]', bold)
-    worksheet.write('K1', 'd_D_avg [µm]', bold)
-    worksheet.write('L1', 'd_D_best [µm]', bold)
-    worksheet.write('M1', 'd_F_avg [µm]', bold)
-    worksheet.write('N1', 'd_F_best [µm]', bold)
-    worksheet.write('O1', 'min E [+/- µM]', bold)
-    # writing entries
-    # D_muc/D_sol and F_muc/F_sol are the corresponding parameters of sigmoidal
-    # functions, does not neccesseraly have to be the value of D and F there,
-    # because profile could be shaped to not reach plateau there !
-    worksheet.write('A2', '%.2f +/- %.2f' % (D_pre[0], DSTD_pre[0]))
-    worksheet.write('B2', '%.2f' % D_best_pre[0])
-    worksheet.write('C2', '%.2f +/- %.2f' % (D_pre[-1], DSTD_pre[-1]))
-    worksheet.write('D2', '%.2f' % D_best_pre[-1])
-    worksheet.write('E2', '%.2f +/- %.2f' % (F_pre[-1], FSTD_pre[-1]))
-    worksheet.write('F2', '%.2f' % F_best_pre[-1])
-    worksheet.write('G2', '%.2f +/- %.2f' % (t_mean,
-                                             t_STD))
-    worksheet.write('H2', '%.2f' % t_best)
-    worksheet.write('I2', '%.2f +/- %.2f' % (t_mean,
-                                             t_STD))
-    worksheet.write('J2', '%.2f' % t_best)
-    worksheet.write('K2', '%.2f +/- %.2f' % (d_mean,
-                                             d_STD))
-    worksheet.write('L2', '%.2f' % d_best)
-    worksheet.write('M2', '%.2f +/- %.2f' % (d_mean,
-                                             d_STD))
-    worksheet.write('N2', '%.2f' % d_best)
-    worksheet.write('O2', '%.2f' % Error[indices[0]])
-
-    # adjusting cell widths
-    worksheet.set_column(0, 15, len('D_sol_best [µm^2/s]'))
-    workbook.close()
+    save_data(xx, cc_best, cc_mean, ccRes, tt, error, t_best,
+              best_results, averages, stdevs, D_mean, D_best, F_mean, F_best,
+              D_std, F_std, c_bulk_mean, c_bulk_std, c_bulk_best, per, savePath)
 
 
-# function for computation of residuals, given to optimization function as
-# argument to be optimized
-def resFun(df, DSol, cc, xx, tt, dfParams, deltaX=1, dx_dist=None, dx_width=None,
-           c0=None, verb=False, bc='reflective', alpha=0):
-    '''
-    This function computes residuals from given D and F and Concentration
-    Profiles. Additional parameters include:
-    discretization width: deltaX,
-    concentration at left boundary: c0,
-    regularization parameter: alpha
-    number of different dfParameters: dfParams
-    for variable discretization -
-    distance beteween bins: dx_dist
-    width of individual bins: dx_width
-    '''
+def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, check=False):
+    """Compute residuals for non-linear optimization."""
+    # separate fit parameters accordingly
+    d = parameters[:2]
+    f = parameters[2:4]
+    t_sig, d_sig = parameters[4], parameters[5]
+    scalings = parameters[6:]
 
-    M = len(cc)  # number of concentration profiles, additional c0 profile
-    N = cc[1].size  # number of bins
-
-    # gathering D and F from non LSQ algorithm
-    # DF parameters to be optimized D2, F1, F2, t_D, d_D, t_F, d_F
-    # d = df[0]
-    d = df[:2]
-    # d = [DSol, d]
-    f = df[2:4]  # letting F completely free
-
-    # computing sigmoidal d and f profiles
-    t_sig, d_sig = df[4], df[5]
+    # compute sigmoidal D, F profiles
     D = np.array([fp.sigmoidalDF(d, t_sig, d_sig, x) for x in xx])
     F = np.array([fp.sigmoidalDF(f, t_sig, d_sig, x) for x in xx])
-
-    # average concentration in bulk related to normalization
-    cc_norm = [cc[0]]+[c*norm for c, norm in zip(cc[1:], df[6:])]
-
-    # now keeping fixed D, F in first 6 bins
+    # now keeping fixed D, F in first 6 bins throughout bulk
     segments = np.concatenate((np.zeros(6), np.arange(D.size))).astype(int)
     D, F = fp.computeDF(D, F, shape=segments)
+    # computing WMatrix, start smaller than 6, because D, F is const. only there
+    W = fp.WMatrixVar(D, F, start=4, end=None, deltaXX=dxx_dist, con=True)
 
-    # computing matrix with variable discretization
-    # start needs to be smaller than 6, because D, F is const. only there
-    W = fp.WMatrixVar(D, F, start=4, end=None, deltaXX=dx_dist, con=True)
+    if check:  # checking for conservation of concentration
+        cross_checking(W, cc, tt, dxx_width, dxx_dist)
 
-    # testing conservation of concentration for reflective boundaries
-    # NOTE: Column sum does not vanish anymore for variable binning, but equally
-    # large positive and negative terms appear at binning transition --> total sum zeros
-    if abs(np.sum((np.sum(W, 0)))) > 0.01:
-        print("WMatrix total sum does not vanish!\nMax is:",
-              np.max(np.sum(W, 0)), '\nFor each column:\n', np.sum(W, 0))
-        sys.exit()
+    # compute numerical profiles
+    cc_theo = [fp.calcC(cc[0], t=t, W=W) for t in tt]
+    # re-scale concentration profiles with fit parameters
+    cc_norm = [c*norm for c, norm in zip(cc[1:], scalings)]
 
-    # testing conservation of concentration
-    con = np.sum(cc[0]*dx_width)
-    # compute profiles from c0 and do the same conservation check
-    ccComp = [fp.calcC(cc[0], t=tt[i], W=W) for i in range(M)]
-
-    if np.any(np.array([abs(np.sum(ccComp[i]*dx_width)-con)
-                        for i in range(M)]) > 0.01*con):
-            print('Error: Computed concentration '
-                  'is not conserved in profiles: \n',
-                  np.nonzero(np.array([abs(np.sum(ccComp[i]*dx_width)-con)
-                                       for i in range(M)]) > 0.01*con))
-            print([np.sum(ccComp[i]*dx_width) for i in range(M)], '\n')
-            print('concentration:\n', con)
-            print('WMatrix Size:\n', W.shape)
-            print('WMatrix Row Sum:\n', np.sum(W, 0))
-            print('WMatrix 2Sum:\n', np.sum(np.sum(W, 0)))
-            sys.exit()
-
-    # computing residual vector
-    n = M-1  # number of combinations for different c-profiles
-
-    # RR = np.array([cc[j] - ccComp[j][6:] for j in range(1, M)]).T
-    RR = np.array([cc_norm[j] - ccComp[j][6:] for j in range(1, M)]).T
-
-    # calculating vector of residuals
+    # compute residual vector and reshape into one long vector
+    RR = np.array([c_exp - c_num[6:] for c_exp, c_num in zip(cc_norm, cc_theo)]).T
     RRn = RR.reshape(RR.size)  # residual vector contains all deviations
-
-    # print out error estimate in form of standart deviation if wanted
-    if (verb):
-        E = np.sqrt(np.sum(RRn**2)/(N*n))  # normalized version
-        print(E)
 
     return RRn
 
 
-# extra function for optimization process, written for easy parallelization
-def optimization(DRange, DSol, FRange, tdRange, bnds, cc, xx, tt, dfParams=None,
-                 deltaX=1, c0=None, dx_dist=None, dx_width=None, c_bulk_range=None,
-                 verb=0, bc='reflective', alpha=0):
-    """
-    Helper function for non-linear LS optimization to profiles.
-    """
+def optimization(init, bnds, xx, cc, tt, dxx_dist, dxx_width, verbosity=0):
+    """Run one iteration of the non-linear optimization."""
+    # reduce residual function to one argument in order to work with algorithm
+    optimize = ft.partial(resFun, xx, cc, tt, dxx_dist, dxx_width)
 
-    if verb == -1:
-        funcVerb = True
-        scpVerb = 0
-    else:
-        funcVerb = False
-        scpVerb = verb
-
-    optimize = ft.partial(resFun, cc=cc, xx=xx, tt=tt, deltaX=deltaX, c0=c0,
-                          bc=bc, dx_dist=dx_dist, dx_width=dx_width, DSol=DSol,
-                          verb=funcVerb, alpha=alpha, dfParams=dfParams)
-
-    initVal = np.concatenate((DRange*np.ones(1), FRange, tdRange, c_bulk_range))
-
-    # initVal = c_bulk_range
     # running freely with standart termination conditions
-    result = op.least_squares(optimize, initVal, bounds=bnds,
-                              max_nfev=None, verbose=scpVerb)
+    result = op.least_squares(optimize, init, bounds=bnds, verbose=verbosity)
 
     return result
 
 
 def main():
-    """Setup optimization and run it.""""
+    """Set up optimization and run it."""
     # reading input and setting up analysis
     verbosity, runs, ana, xx, cc, tt = io.startUp()
-
-    # gathering c-profile information
-    dim = cc[:, 0].size  # number of bins measured
     n_profiles = cc[0, :].size-1  # number of profiles without c(t=0)
 
-    # get variable discretization
-    dxx_dist, dxx_width = discretization_Block(xx, dim)
-    # build t=0 profile
-    cc = build_zero_profile(cc)
+    dxx_dist, dxx_width = discretization_Block(xx)  # get variable discretization
+    cc = build_zero_profile(cc)  # build t=0 profile
     # set up optimization
     params = 2  # only fit here Dsol, Fsol and Dmuc, Fmuc
     bnds, inits = initialize_optimization(runs, params, n_profiles, xx)
@@ -453,9 +368,7 @@ def main():
         print('\nDoing analysis only.')
         res = np.load('result.npy')
         print('Overall %i runs have been performed.' % res.size)
-        analysis(np.array(res), bc=bc_mode, c0=c0, xx=xx, xx_DF=xx_DF, cc=cc, tt=tt,
-                 deltaX=deltaXX, alpha=alpha, plot=True, dfParams=params,
-                 dx_dist=dxx_dist, dx_width=dxx_width, DSol=DSol, xx_tot=x_tot)
+        analysis(np.array(res), xx, cc, tt, dxx_dist, dxx_width, per=1)
         print('\nPlots have been made and data was extraced and saved.')
         sys.exit()
 
@@ -463,22 +376,16 @@ def main():
     for i, init in enumerate(inits):  # looping through all different start values
         print('\nNow at run %i out of %i...\n' % (i+1, len(inits)))
         try:
-            results.append(optimization(start_values=init, dx_dist=dxx_dist,
-                                        dx_width=dxx_width, bnds=bnds, cc=cc,
-                                        xx=xx_DF, tt=tt, deltaX=deltaXX, c0=c0,
-                                        verb=verbosity, bc=bc_mode,
-                                        alpha=alpha, DSol=DSol))
+            results.append(optimization(init, bnds, xx, cc, tt, dxx_dist,
+                                        dxx_width, verbosity))
             np.save('result.npy', np.array(results))
         except KeyboardInterrupt:
             print('\n\nScript has been terminated.\nData will now be analyzed...')
             break
 
-    analysis(np.array(results), bc=bc_mode, c0=c0, xx_DF=xx_DF, xx=xx, cc=cc,
-             tt=tt, dfParams=params, deltaX=deltaXX, alpha=alpha, plot=True,
-             dx_dist=dxx_dist, dx_width=dxx_width, DSol=DSol, xx_tot=x_tot)
+    analysis(np.array(results), xx, cc, tt, dxx_dist, dxx_width, per=1)
 
-    # returns number of runs in order to compute average time per run
-    return Runs
+    return runs  # returns number of runs in order to compute average time per run
 
 
 if __name__ == "__main__":
