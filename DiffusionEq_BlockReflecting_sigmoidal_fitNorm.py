@@ -1,7 +1,7 @@
-"""Fitting also normalization of profiles."""
 # -*- coding: utf-8 -*-
-# implemented fokker-planck equation in 1D for
-# # use this for matplotlib on the cluster
+"""Fitting DF while also rescaling profiles to match literature DSol."""
+# use this for matplotlib on the cluster
+# import matplotlib
 # matplotlib.use('Agg')
 import numpy as np
 import time
@@ -54,15 +54,15 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
     indices = np.argsort(Error)  # for sorting according to error
 
     # gathering mean of F and D for best x% of runs
-    D_pre = np.mean(np.array([result[indices[i]].x[0]
+    D_pre = np.mean(np.array([result[indices[i]].x[:2]
                               for i in range(nbr)]), axis=0)
-    D_pre = [DSol, D_pre]
-    F_preNoGauge = np.mean(np.array([result[indices[i]].x[1:3]
+    # D_pre = [DSol, D_pre]
+    F_preNoGauge = np.mean(np.array([result[indices[i]].x[2:4]
                                      for i in range(nbr)]), axis=0)
     F_pre = F_preNoGauge - F_preNoGauge[0]
-    t_mean, d_mean = np.mean(np.array([result[indices[i]].x[3:5]
+    t_mean, d_mean = np.mean(np.array([result[indices[i]].x[4:6]
                                        for i in range(nbr)]), axis=0)
-    c_norm_mean = np.mean(np.array([result[indices[i]].x[5:]
+    c_norm_mean = np.mean(np.array([result[indices[i]].x[6:]
                                     for i in range(nbr)]), axis=0)
     # c_norm_mean = np.mean(np.array([result[indices[i]].x
     #                                 for i in range(nbr)]), axis=0)
@@ -79,12 +79,12 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
     # gathering standart deviation for top x% of runs
     # computed from gauß errorpropagation for errors of D1, D2 or F1, F2
     # contribution of t_D, d_D, t_F and d_F neglected for now
-    t_STD, d_STD = np.std(np.array([result[indices[i]].x[3:5]
+    t_STD, d_STD = np.std(np.array([result[indices[i]].x[4:6]
                                     for i in range(nbr)]), axis=0)
-    DSTD_pre = np.std(np.array([result[indices[i]].x[0]
+    DSTD_pre = np.std(np.array([result[indices[i]].x[:2]
                                 for i in range(nbr)]), axis=0)
-    DSTD_pre = [0, DSTD_pre]
-    FSTD_pre = np.std(np.array([result[indices[i]].x[1:3]
+    # DSTD_pre = [0, DSTD_pre]
+    FSTD_pre = np.std(np.array([result[indices[i]].x[2:4]
                                 for i in range(nbr)]), axis=0)
     DSTD_pre = np.array([np.sqrt(
         ((0.5 - sp.erf(
@@ -109,12 +109,12 @@ def analysis(result, xx_DF, dx_dist, DSol, dfParams=None, xx_tot=None,
     DSTD, FSTD = fp.computeDF(DSTD_pre, FSTD_pre, shape=segments)
 
     # gathering best D and F for computation of profiles
-    D_best_pre = result[indices[0]].x[0]
-    D_best_pre = [DSol, D_best_pre]
-    F_best_preNoGauge = result[indices[0]].x[1:3]
+    D_best_pre = result[indices[0]].x[:2]
+    # D_best_pre = [DSol, D_best_pre]
+    F_best_preNoGauge = result[indices[0]].x[2:4]
     F_best_pre = F_best_preNoGauge - F_best_preNoGauge[0]
-    t_best, d_best = result[indices[0]].x[3:5]
-    c_norm_best = result[indices[0]].x[5:]
+    t_best, d_best = result[indices[0]].x[4:6]
+    c_norm_best = result[indices[0]].x[6:]
     # c_norm_best = result[indices[0]].x
     # F_best_pre, D_best_pre, t_best, d_best = [0, 0.98], [55, 35.26], 166.74, 4.47
     D_best = np.array([fp.sigmoidalDF(D_best_pre, t_best, d_best, x) for x in xx_DF])
@@ -275,17 +275,18 @@ def resFun(df, DSol, cc, xx, tt, dfParams, deltaX=1, dx_dist=None, dx_width=None
 
     # gathering D and F from non LSQ algorithm
     # DF parameters to be optimized D2, F1, F2, t_D, d_D, t_F, d_F
-    d = df[0]
-    d = [DSol, d]
-    f = df[1:3]  # letting F completely free
+    # d = df[0]
+    d = df[:2]
+    # d = [DSol, d]
+    f = df[2:4]  # letting F completely free
 
     # computing sigmoidal d and f profiles
-    t_sig, d_sig = df[3], df[4]
+    t_sig, d_sig = df[4], df[5]
     D = np.array([fp.sigmoidalDF(d, t_sig, d_sig, x) for x in xx])
     F = np.array([fp.sigmoidalDF(f, t_sig, d_sig, x) for x in xx])
 
     # average concentration in bulk related to normalization
-    cc_norm = [cc[0]]+[c*norm for c, norm in zip(cc[1:], df[5:])]
+    cc_norm = [cc[0]]+[c*norm for c, norm in zip(cc[1:], df[6:])]
 
     # now keeping fixed D, F in first 6 bins
     segments = np.concatenate((np.zeros(6), np.arange(D.size))).astype(int)
@@ -372,9 +373,6 @@ def main():
     (bc_mode, dim, verbosity, Runs, ana, deltaX, c0, xx, cc, tt, bnds, FInit,
      DInit, alpha) = io.startUp()
 
-    # xx, cc = data[:, 0], np.c_[data[:, 1], data[:, 11], data[:, 21], data[:, 31], data[:, 41],
-                               # data[:, 51], data[:, 61], data[:, 71], data[:, 81], data[:, 91], data[:, 100]]
-
     # NOTE: settting DSol here
     DSol = 55
     # ------------------------- discretization ------------------------ #
@@ -404,7 +402,7 @@ def main():
     # ------------------------- discretization ------------------------ #
 
     # NOTE: building c0 profile, assume c0 const. in bulk
-    c_const = 1  # normalized to bulk concentration c0=1
+    c_const = cc[0, 0]  # const. throughout bulk --> extend first value through bulk
     c0 = cc[:, 0]
     c0 = np.concatenate((np.ones(6)*c_const, c0))
     cc = [c0] + [cc[:, i] for i in range(1, cc[0, :].size)]  # now with c0
@@ -416,9 +414,9 @@ def main():
     params = 2  # only two values for D, F
     # NOTE: try estimating only normalization factors for fixed D, F
 
-    bndsDUpper = np.ones(1)*DBound
+    bndsDUpper = np.ones(params)*DBound
     bndsFUpper = np.ones(params)*FBound
-    bndsDLower = np.zeros(1)
+    bndsDLower = np.zeros(params)
     bndsFLower = np.ones(params)*(-FBound)
     # bounds for interface position and layer thickness zero and max x position
     tdBoundsLower = np.zeros(2)
@@ -428,7 +426,7 @@ def main():
     norm_c_bulk_upper = np.ones(N)*100
     norm_c_bulk_lower = np.zeros(N)
     FInit = np.zeros(params)
-    DInit = (np.random.rand(Runs)*DBound)
+    DInit = (np.random.rand(Runs, params)*DBound)
     # order is [t, d], set boundary initially at x = 50
     tdInit = np.array([50, deltaX*3])
     # FInit, tdInit, DInit = None, None, np.array([0])
@@ -457,7 +455,7 @@ def main():
     for i in range(Runs):
         print('\nNow at run %i out of %i...\n' % (i+1, Runs))
         try:
-            results.append(optimization(DRange=DInit[i],
+            results.append(optimization(DRange=DInit[i, :],
                                         FRange=FInit, tdRange=tdInit,
                                         c_bulk_range=norm_c_bulk_init,
                                         dfParams=params, dx_dist=dxx_dist,
