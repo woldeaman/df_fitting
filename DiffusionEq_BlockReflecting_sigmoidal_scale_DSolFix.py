@@ -138,7 +138,7 @@ def compute_avg_c_bulk(cc_scaled, xx, dxx_width, x_tot=1780):
 
 def average_data(result, xx, cc, top_percent=1):
     """Gather and average data from all optimization runs."""
-    # number if top x% of the runs
+    # number of top x% of the runs
     nbr = np.ceil(top_percent*len(result)).astype(int)
 
     # used to later compute normalized error
@@ -149,6 +149,7 @@ def average_data(result, xx, cc, top_percent=1):
     # loading error values, factor two, because of cost function definition
     error = [np.sqrt(2*res.cost / (bins*combis)) for res in result]
     indices = np.argsort(error)  # for sorting according to error
+    error_sorted = [error[idx] for idx in indices[:nbr]]
 
     # gathering mean for all parameters
     averages = np.mean([result[idx].x for idx in indices[:nbr]], axis=0)
@@ -184,7 +185,7 @@ def average_data(result, xx, cc, top_percent=1):
     DSTD, FSTD = fp.computeDF(DSTD_pre, FSTD_pre, shape=segments)
 
     return (best_results, averages, stdevs, F_best, D_best, t_best, d_best,
-            F_mean, D_mean, t_mean, d_mean, FSTD, DSTD, error)
+            F_mean, D_mean, t_mean, d_mean, FSTD, DSTD, error_sorted)
 
 
 def cross_checking(W, cc, tt, dxx_width, dxx_dist):
