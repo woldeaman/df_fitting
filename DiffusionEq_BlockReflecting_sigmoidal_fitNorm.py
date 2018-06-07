@@ -432,7 +432,7 @@ def main():
     # order is [t, d], set boundary initially at x = 50
     tdInit = np.array([50, deltaX*3])
     # FInit, tdInit, DInit = None, None, np.array([0])
-    norm_c_bulk_init = np.ones(N)*0.5
+    norm_c_bulk_init = np.array([0.91588263, 0.90094615, 0.89389695, 0.89931493])
     bnds = (np.concatenate((bndsDLower, bndsFLower, tdBoundsLower, norm_c_bulk_lower)),
             np.concatenate((bndsDUpper, bndsFUpper, tdBoundsUpper, norm_c_bulk_upper)))
 
