@@ -57,7 +57,7 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
                delimiter=',',
                header=('Fitted bulk concentration, averaged over all runs.\n'
                        'column1: average\n'
-                       'column2: standart deviation\n'))
+                       'column2: standart deviation'))
     np.savetxt(savePath+'c_bulk_best.txt', c_bulk_best, delimiter=',',
                header=('Fitted bulk concentration for best run.'))
 
@@ -76,6 +76,8 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
               style='.--', path=savePath, xticks=xlabels)
     ps.plotDF(xx_dummy, D_best, F_best-F_best[0], save=True, style='.--', name='bestDF',
               path=savePath, xticks=xlabels)
+    # plotting fitted average bulk concentration
+    ps.plot_average_bulk_concentration(c_bulk_best, tt[1:], savePath)
 
     # saving data to excel spreadsheet
     workbook = xl.Workbook(savePath+'results.xlsx')
@@ -92,14 +94,14 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
     worksheet.write('C4', 't_best [µm]', bold)
     worksheet.write('A5', 'd_avg [µm]', bold)
     worksheet.write('C5', 'd_best [µm]', bold)
-    worksheet.write('A8', 'min Err. [+/- µM]', bold)
+    worksheet.write('A8', 'min Err.', bold)
 
     # gather original parameters
     means = [avg_params[0], avg_params[1], (avg_params[3]-avg_params[2]),
              avg_params[4], avg_params[5]]
     stdevs = [std_params[0], std_params[1], (std_params[3]+std_params[2]),
               std_params[4], std_params[5]]
-    bests = [best_params[0], best_params[1], (best_params[3]-std_params[2]),
+    bests = [best_params[0], best_params[1], (best_params[3]-best_params[2]),
              best_params[4], best_params[5]]
 
     # writing entries, storing original parameters for sigmoidal curves
@@ -234,7 +236,7 @@ def initialize_optimization(runs, params, n_profiles, xx, DMax=1000, FMax=20):
     bnds_scale_low = np.zeros(n_profiles)
     # setting start values
     f_init = np.zeros(params)
-    d_init = (np.random.rand(runs, 1)*DMax)  # randomly choose D , NOTE: only for Dmuc
+    d_init = np.random.rand(runs, 1)*DMax  # randomly choose D , NOTE: only for Dmuc
     td_init = np.array([50, dx*3])  # order is [t, d], set t initially to 50 µm
     scale_init = np.ones(n_profiles)  # initially no scaling
     # storing everything together
@@ -337,7 +339,7 @@ def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, check=False):
         cross_checking(W, cc, tt, dxx_width, dxx_dist)
 
     # compute numerical profiles
-    cc_theo = [fp.calcC(cc[0], t=t, W=W) for t in tt]
+    cc_theo = [fp.calcC(cc[0], t=t, W=W) for t in tt[1:]]
     # re-scale concentration profiles with fit parameters
     cc_norm = [c*norm for c, norm in zip(cc[1:], scalings)]
 
@@ -369,7 +371,7 @@ def main():
     dxx_dist, dxx_width = discretization_Block(xx)  # get variable discretization
     cc = build_zero_profile(cc)  # build t=0 profile
     # set up optimization
-    params = 2  # only fit here Dsol, Fsol and Dmuc, Fmuc
+    params = 2  # only fit here Fsol and Dmuc, Fmuc
     bnds, inits = initialize_optimization(runs, params, n_profiles, xx)
 
     if ana:  # make only analysis
