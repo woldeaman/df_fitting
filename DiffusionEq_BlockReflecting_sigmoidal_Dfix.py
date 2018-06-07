@@ -334,7 +334,7 @@ def main():
      DInit, alpha) = io.startUp()
 
     # NOTE: settting DSol here
-    DSol = 1000
+    DSol = 55
 
     # ------------------------- discretization ------------------------ #
     # lenght of the different segments for computation
