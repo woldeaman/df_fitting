@@ -9,6 +9,62 @@ import argparse as ap
 import sys
 
 
+def startUp_slim():
+    """Read setup variables but in a minimal, slimed down fashion."""
+    # gathering path to data and setting verbosity
+    parser = ap.ArgumentParser(description=(
+        """
+        This script determines free energy and diffusivity profiles, based
+        on supplied normalized experimental concentration profiles.
+        First column is always assumed to be z-distance vector!
+        """), formatter_class=ap.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-p', dest='path', type=str,
+                        help='Define the path to data for analysis')
+    parser.add_argument('-v', dest='verbosity', type=int, default=0, help='set '
+                        'verbosity level ranging from 0 - no output to 2 - '
+                        'full output')
+    parser.add_argument('-ana', dest='analysis', action='store_true',
+                        help='Do only plotting and analysis of previous run')
+    args = parser.parse_args()
+    ana = args.analysis
+    verbosity = args.verbosity
+
+    # reading run parameters from stdin
+    print('Set temporal resolution, supply dt in seconds:')
+    dt = int(sys.stdin.readline())
+
+    print('Choose profiles for analysis (supply timepoints in seconds,'
+          '"all" means all profiles will be analyzed):')
+    answer = input()
+    if "all" in answer:
+        tt = "all"
+    else:
+        tt = np.array([int(nbr) for nbr in answer.split()])
+
+    print('Set number of analysis runs:')
+    Runs = int(sys.stdin.readline())  # how many start D-values should be tried
+
+    print('\nReading profiles...')
+    try:  # change seperator accordingly
+        data = readData(args.path, sep=';')
+    except ValueError:
+        try:
+            data = readData(args.path, sep=',')
+        except ValueError:
+            data = readData(args.path, sep=' ')
+    xx = data[:, 0]  # first column assumed to be distance vector
+
+    # now reading profiles based on input for different timepoints
+    if "all" in tt:
+        cc = np.array(data[:, 1:])
+        tt = np.arange(0, cc[0, :].size*dt, dt)
+    else:
+        cc = np.array([data[:, int(t/dt + 1)] for t in tt]).T
+
+    print('\nStarting optimization...\n')
+    return (verbosity, Runs, ana, xx, cc, tt)
+
+
 def startUp():
     '''
     This function reads input values from terminal and sets up everything
