@@ -285,7 +285,7 @@ def resFun(df, DSol, cc, xx, tt, dfParams, deltaX=1, dx_dist=None, dx_width=None
     F = np.array([fp.sigmoidalDF(f, t_sig, d_sig, x) for x in xx])
 
     # average concentration in bulk related to normalization
-    cc_norm = [cc[0]]+[c*norm for c, norm in zip(cc[1:], df)]
+    cc_norm = [cc[0]]+[c*norm for c, norm in zip(cc[1:], df[5:])]
 
     # now keeping fixed D, F in first 6 bins
     segments = np.concatenate((np.zeros(6), np.arange(D.size))).astype(int)
@@ -425,14 +425,14 @@ def main():
     tdBoundsUpper = np.ones(2)*np.max(xx)
     # NOTE: now also fitting average concentration in bulk
     # in order to get normalization factor for each profile
-    norm_c_bulk_upper = np.ones(N)*100  # value between 0-1 as c is normalized
+    norm_c_bulk_upper = np.ones(N)*100
     norm_c_bulk_lower = np.zeros(N)
-    FInit = np.zeros(2)
+    FInit = np.zeros(params)
     DInit = (np.random.rand(Runs)*DBound)
     # order is [t, d], set boundary initially at x = 50
     tdInit = np.array([50, deltaX*3])
     # FInit, tdInit, DInit = None, None, np.array([0])
-    norm_c_bulk_init = np.array([0.91588263, 0.90094615, 0.89389695, 0.89931493])
+    norm_c_bulk_init = np.ones(N)
     bnds = (np.concatenate((bndsDLower, bndsFLower, tdBoundsLower, norm_c_bulk_lower)),
             np.concatenate((bndsDUpper, bndsFUpper, tdBoundsUpper, norm_c_bulk_upper)))
 
