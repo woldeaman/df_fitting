@@ -45,19 +45,19 @@ def figure_diffusivities(d_sol, d_gel, f_gel, error, name='params_dsol',
         plt.show()
 
 
-def read_data(path):
+def read_data(path, diffusivities):
     """Read data from simulations."""
     # cycle through all simulations
     D_sol, D_gel, F_gel, Error = {}, {}, {}, {}
     for set in setups:
         D_sol[set], D_gel[set], F_gel[set], Error[set] = [], [], [], []
-        for d in diffusivities:
-            subpath = '%s/DSol_%s/results_DSol=%.6f/' % (set, d, d)
+        for d in diffusivities[set]:
+            subpath = '%s/DSol_%s/results/' % (set, d)
             err_raw = np.loadtxt(path+subpath+'minError.txt', delimiter=',')
             df_raw = np.loadtxt(path+subpath+'DF_best.txt', delimiter=',')
             min_err = np.min(err_raw)  # gather minimal error
-            d_sol, d_gel = df_raw[0, 1], df_raw[-1, 1]  # gather D's
-            f_gel = df_raw[-1, 2]  # gather F
+            d_sol, d_gel = df_raw[0, 0], df_raw[-1, 0]  # gather D's
+            f_gel = df_raw[-1, 1]  # gather F
             # save loaded data in lists
             D_sol[set].append(d_sol)
             D_gel[set].append(d_gel)
@@ -72,19 +72,22 @@ def read_data(path):
 #    SETTING UP ENVIRONMENT    #
 ##########################################################################
 setups = ['gel10_dex10', 'gel10_dex4', 'gel6_dex10', 'gel6_dex20', 'gel6_dex4']
-diffusivities = [d for d in np.arange(100, 1001, 100).astype(int)] + [1, 27.4, 39.5, 55, 101.4]
-path_d_data = home+"/Desktop/Cluster/jobs/fokkerPlanckModel/Block_data/c0_const/sigmoidal/"
+DSols_theo = [55, 101.4, 55, 39.5, 101.4]  # literature value for DSol for different dextrans
+d_range = [d for d in range(100, 1001, 100)]  # simulated DSol values
+diffusivities = {set: [1]+[d for d in range(100, 1001, 100)]+[d_theo]
+                 for set, d_theo in zip(setups, DSols_theo)}
+path_d_data = home+"/Desktop/Cluster/FokkerPlanckModelling/Block_Data/4.Batch/rescaling_live/fix_Dsol/"
 ##########################################################################
 
 
 #################################
 #             MAIN LOOP         #
 ##########################################################################
-DSols = [55, 101.4, 55, 39.5, 101.4]  # chosen DSol for different dextrans
 # read errors for different d values
-D_sol, D_gel, F_gel, Error = read_data(path_d_data)
+D_sol, D_gel, F_gel, Error = read_data(path_d_data, diffusivities)
+
 
 for i, set in enumerate(setups):
-    figure_diffusivities(D_sol[set], D_gel[set], F_gel[set], Error[set], opti=DSols[i],
-                         title=set.split('_'), name=set, save=True)
+    figure_diffusivities(D_sol[set], D_gel[set], F_gel[set], Error[set],
+                         opti=DSols_theo[i], title=set.split('_'), name=set, save=True)
 ##########################################################################
