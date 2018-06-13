@@ -68,7 +68,7 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
     xlabels = [[xx_dummy[0]]+[x for x in xx_dummy[6::5]],
                ["-%i" % length_bulk]+["%i" % (i*5*dx) for i in range(xx_dummy[6::5].size)]]
     # plotting profiles
-    t_newX_coords = int(t_best/dx + 6)
+    t_newX_coords = np.round(t_best/dx + 6)
     ps.figure_df_profiles(xx_dummy, xlabels, cc_scaled_best, ccRes, tt, t_newX_coords,
                           D_mean, F_mean-F_mean[0], D_std, F_std, plt_profiles=10, save=True,
                           savePath=savePath)

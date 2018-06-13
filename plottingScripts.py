@@ -373,9 +373,13 @@ def figure_df_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
     scalarMap.set_array(tt[1:]/60)  # mapping colors to time in minutes
 
     fig = plt.figure()  # create figure
-    ax_D = plt.subplot2grid((2, 3), (0, 0))
-    ax_F = plt.subplot2grid((2, 3), (1, 0), sharex=ax_D)
-    ax_profiles = plt.subplot2grid((2, 3), (0, 1), rowspan=2, colspan=2)
+    ax_profiles = plt.subplot2grid((2, 3), (0, 0), rowspan=2, colspan=2)
+    ax_D = plt.subplot2grid((2, 3), (0, 2))
+    ax_F = plt.subplot2grid((2, 3), (1, 2), sharex=ax_D)
+    # subplot labels
+    fig.text(0.07, 0.97, 'A', fontsize='xx-large', weight='extra bold')  # add subplot label
+    fig.text(0.66, 0.97, 'B', fontsize='xx-large', weight='extra bold')
+    fig.text(0.66, 0.5, 'C', fontsize='xx-large', weight='extra bold')
     # plotting D and F profiles
     for ax, df, df_std, col, label in zip([ax_D, ax_F], [D, F], [D_STD, F_STD],
                                           ['r', 'b'], ['D [$\mu$m$^2$/s]', 'F [k$_B$T]']):
@@ -385,14 +389,15 @@ def figure_df_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
         ax.errorbar(xx, df, yerr=df_std, fmt='.--'+col)
         ax.set(ylabel=label)
         ax.set_xlim([xx[0]-xx[1], xx[-1]+xx[1]])
+        ax.set_ylim([np.min(df) - 0.1*np.max(df), np.max(df) + 0.1*np.max(df)])
     plt.setp(ax_D.get_xticklabels(), visible=False)  # don't show x-ticks for D plot
     ax_F.set(xlabel='z-distance [$\mu$m]')
     # plotting concentration profiles
+    ax_profiles.axvline(t_trans, c='k', ls=':')  # indicate transition position
     plt_c_zero = ax_profiles.plot(xx, cc_exp[0], '-k')  # t=0 profile
     for j, col in zip(plt_nbr, colors):  # plot rest of profiles
         plt_c_exp = ax_profiles.plot(xx_exp, cc_exp[j], '.', color=col)
         plt_c_theo = ax_profiles.plot(xx, cc_theo[:, j], '--', color=col)
-    ax_profiles.axvline(t_trans, c='k', ls=':')  # indicate transition position
     ax_profiles.set(xlabel='z-distance [$\mu$m]', ylabel='Normalized concentration')
     # setting correct x-labels and x-ticks
     for ax in [ax_F, ax_profiles]:
