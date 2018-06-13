@@ -354,15 +354,15 @@ def plot_average_bulk_concentration(c_avg_bulk, tt, savePath):
 @mpltex.acs_decorator  # making acs-style figures
 def figure_df_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
                        D_STD, F_STD, plt_profiles='all', save=False,
-                       savePath=os.get_cwd()):
+                       savePath=os.getcwd()):
     """Make nice figure for D,F profiles and concentration profiles."""
     # setting number of profiles to plot
-    c_nbr = len(cc_exp)-1  # number of profiles without t=0 profile
+    c_nbr = len(cc_exp)  # number of profiles
     if plt_profiles is 'all' or c_nbr < plt_profiles:
-        plt_nbr = np.arange(c_nbr)  # plot all profiles
+        plt_nbr = np.arange(1, c_nbr)  # plot all profiles
     else:
         skip = int(c_nbr/plt_profiles)
-        plt_nbr = np.arange(0, c_nbr, skip)
+        plt_nbr = np.arange(1, c_nbr, skip)
     # creating x-vector for plotting experimental profiles
     diff = cc_theo[:, 1].size - cc_exp[1].size  # difference in lengths
     xx_exp = xx[diff:]  # truncated vector for plotting experimental profiles
