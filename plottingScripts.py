@@ -375,7 +375,7 @@ def figure_df_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
     fig = plt.figure()  # create figure
     ax_D = plt.subplot2grid((2, 3), (0, 0))
     ax_F = plt.subplot2grid((2, 3), (1, 0), sharex=ax_D)
-    ax_profiles = plt.subplot2grid((2, 3), (1, 1), rowspan=2, colspan=2)
+    ax_profiles = plt.subplot2grid((2, 3), (1, 0), rowspan=2, colspan=2)
     # plotting D and F profiles
     for ax, df, df_std, col, label in zip([ax_D, ax_F], [D, F], [D_STD, F_STD],
                                           ['r', 'b'], ['D [$\mu$m$^2$/s]', 'F [k$_B$T]']):
