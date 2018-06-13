@@ -377,49 +377,50 @@ def figure_df_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
     ax_D = plt.subplot2grid((2, 3), (0, 2))
     ax_F = plt.subplot2grid((2, 3), (1, 2), sharex=ax_D)
     # subplot labels
-    fig.text(0.07, 0.97, 'A', fontsize='xx-large', weight='extra bold')  # add subplot label
-    fig.text(0.66, 0.97, 'B', fontsize='xx-large', weight='extra bold')
-    fig.text(0.66, 0.5, 'C', fontsize='xx-large', weight='extra bold')
+    fig.text(0.005, 0.92, 'A', fontsize='xx-large', weight='extra bold')  # add subplot label
+    fig.text(0.65, 0.92, 'B', fontsize='xx-large', weight='extra bold')
+    fig.text(0.65, 0.55, 'C', fontsize='xx-large', weight='extra bold')
+
     # plotting concentration profiles
-    ax_profiles.axvline(t_trans, c='k', ls=':')  # indicate transition position
     plt_c_zero = ax_profiles.plot(xx, cc_exp[0], '-k')  # t=0 profile
     for j, col in zip(plt_nbr, colors):  # plot rest of profiles
         plt_c_exp = ax_profiles.plot(xx_exp, cc_exp[j], '.', color=col)
         plt_c_theo = ax_profiles.plot(xx, cc_theo[:, j], '--', color=col)
     ax_profiles.set(xlabel='z-distance [$\mu$m]', ylabel='Normalized concentration')
-    # setting correct x-labels and x-ticks
-    for ax in [ax_F, ax_profiles]:
-        ax.set_xticks(xticks[0])
-        ax.set_xticklabels(xticks[1])
     # printing legend
     ax_profiles.legend([plt_c_zero[0], plt_c_exp[0], plt_c_theo[0]],
                        ["c$_{exp}$ (t = 0 min)", "Experiment", "Numerical"],
                        frameon=False)
     # place colorbar in inset in current axis
-    cb1 = fig.colorbar(scalarMap, cmap=cm.jet, norm=norm, orientation='vertical',
-                       ax=ax_profiles)
-    cb1.set_label('Time [min]')
+    fig.colorbar(scalarMap, cmap=cm.jet, norm=norm, orientation='vertical',
+                 ax=ax_profiles, label='Time [min]', pad=0.0125)
 
     # plotting D and F profiles
     for ax, df, df_std, col, label in zip([ax_D, ax_F], [D, F], [D_STD, F_STD],
                                           ['r', 'b'], ['D [$\mu$m$^2$/s]', 'F [k$_B$T]']):
-        ax.axvspan(xx[0]-xx[1], t_trans, color=[0.875, 0.875, 1], lw=0)  # bulk = blue
-        ax.axvspan(t_trans, xx[-1]+xx[1], color=[0.9, 0.9, 0.9], lw=0)  # gel = grey
-        ax.axvline(t_trans, ls=':', c='k')  # indicate transition
         ax.errorbar(xx, df, yerr=df_std, fmt='.--'+col)
         ax.set(ylabel=label)
-        ax.set_xlim([xx[0]-xx[1], xx[-1]+xx[1]])
+        ax.get_yaxis().set_label_coords(-0.17, 0.5)
         ax.set_ylim([np.min(df) - 0.1*np.max(df), np.max(df) + 0.1*np.max(df)])
     plt.setp(ax_D.get_xticklabels(), visible=False)  # don't show x-ticks for D plot
     ax_F.set(xlabel='z-distance [$\mu$m]')
+
+    # nicen up plots with background colors
+    for ax in [ax_F, ax_D, ax_profiles]:
+        ax.set_xticks(xticks[0])
+        ax.set_xticklabels(xticks[1])
+        ax.axvline(t_trans, ls=':', c='k')  # indicate transition
+        ax.axvspan(xx[0]-xx[1], t_trans, color=[0.875, 0.875, 1], lw=0)  # bulk = blue
+        ax.axvspan(t_trans, xx[-1]+xx[1], color=[0.9, 0.9, 0.9], lw=0)  # gel = grey
+        ax.set_xlim([xx[0]-xx[1], xx[-1]+xx[1]])
 
     # for double column figures in acs style format
     w_double = 7  # inch size for width of double column figure for ACS journals
     width, height = fig.get_size_inches()
     fig.set_size_inches(w_double, height)
+    fig.tight_layout(pad=0.5, w_pad=0.55)
 
     if save:
-        plt.savefig(savePath+'results_combined.eps', bbox_inches='tight')
+        plt.savefig(savePath+'results_combined.eps')
     else:
-        fig.tight_layout()
         plt.show()
