@@ -373,9 +373,9 @@ def figure_df_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
     scalarMap.set_array(tt[1:]/60)  # mapping colors to time in minutes
 
     fig = plt.figure()  # create figure
-    ax_D = plt.subplot2grid((2, 2), (0, 0))
-    ax_F = plt.subplot2grid((2, 2), (1, 0), sharex=ax_D)
-    ax_profiles = plt.subplot2grid((2, 2), (0, 1), rowspan=2)
+    ax_D = plt.subplot2grid((2, 3), (0, 0))
+    ax_F = plt.subplot2grid((2, 3), (1, 0), sharex=ax_D)
+    ax_profiles = plt.subplot2grid((2, 3), (1, 1), rowspan=2, colspan=2)
     # plotting D and F profiles
     for ax, df, df_std, col, label in zip([ax_D, ax_F], [D, F], [D_STD, F_STD],
                                           ['r', 'b'], ['D [$\mu$m$^2$/s]', 'F [k$_B$T]']):
@@ -409,7 +409,7 @@ def figure_df_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
     # for double column figures in acs style format
     w_double = 7  # inch size for width of double column figure for ACS journals
     width, height = fig.get_size_inches()
-    fig.set_size_inches(w_double, height*2)  # double height because of two rows
+    fig.set_size_inches(w_double, height)
 
     if save:
         plt.savefig(savePath+'results_combined.eps', bbox_inches='tight')

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Fitting DF while also rescaling profiles to match literature DSol."""
 # use this for matplotlib on the cluster
-# import matplotlib
-# matplotlib.use('Agg')
+import matplotlib
+matplotlib.use('Agg')
 import numpy as np
 import time
 import inputOutput as io
@@ -61,7 +61,7 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
     # reconstruct original x-vector
     length_bulk, dx = (x_tot - np.max(xx)), (xx[1] - xx[0])
     # for labeling the x-axis correctly
-    xx_dummy = np.arange(ccRes[:, 0].size)
+    xx_dummy = np.arange(ccRes[:, 0].size).astype(int)
     xlabels = [[xx_dummy[0]]+[x for x in xx_dummy[6::5]],
                [-length_bulk]+[i*5*dx for i in range(xx_dummy[6::5].size)]]
     # plotting profiles
