@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Fitting DF while also rescaling profiles to match literature DSol."""
 # use this for matplotlib on the cluster
-# import matplotlib
-# matplotlib.use('Agg')
+import matplotlib
+matplotlib.use('Agg')
 import numpy as np
 import time
 import inputOutput as io
