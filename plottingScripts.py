@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib as mpl
 import mpltex  # for acs style figures
-# from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+import os
 import numpy as np
 import sys
 
@@ -349,3 +349,63 @@ def plot_average_bulk_concentration(c_avg_bulk, tt, savePath):
     plt.xlabel('Timepoint [min]')
     plt.ylabel('$\\overline{c_{bulk}}$')
     plt.savefig(savePath+'c_bulk.pdf', bbox_inches='tight')
+
+
+@mpltex.acs_decorator  # making acs-style figures
+def figure_df_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
+                       D_STD, F_STD, plt_profiles='all', save=False,
+                       savePath=os.get_cwd()):
+    """Make nice figure for D,F profiles and concentration profiles."""
+    # setting number of profiles to plot
+    c_nbr = len(cc_exp)-1  # number of profiles without t=0 profile
+    if plt_profiles is 'all' or c_nbr < plt_profiles:
+        plt_nbr = np.arange(c_nbr)  # plot all profiles
+    else:
+        skip = int(c_nbr/plt_profiles)
+        plt_nbr = np.arange(0, c_nbr, skip)
+    # creating x-vector for plotting experimental profiles
+    diff = cc_theo[:, 1].size - cc_exp[1].size  # difference in lengths
+    xx_exp = xx[diff:]  # truncated vector for plotting experimental profiles
+    # setting up the colormap and color range
+    colors = [cm.jet(x) for x in np.linspace(0, 1, c_nbr)]
+    norm = mpl.colors.Normalize(vmin=tt[1]/60, vmax=tt[-1]/60)
+    scalarMap = cm.ScalarMappable(norm=norm, cmap=cm.jet)
+    scalarMap.set_array(tt[1:]/60)  # mapping colors to time in minutes
+
+    fig = plt.figure()  # create figure
+    ax_D = plt.subplot2grid((4, 1), (0, 0))
+    ax_F = plt.subplot2grid((4, 1), (1, 0), sharex=ax_D)
+    ax_profiles = plt.subplot2grid((4, 1), (2, 0), rowspan=2, sharex=ax_D)
+    # plotting D and F profiles
+    for ax, df, df_std, col, label in zip([ax_D, ax_F], [D, F], [D_STD, F_STD],
+                                          ['r', 'b'], ['D [$\mu^2$/s]', 'F [k$_B$T]']):
+        ax.axvspan(xx[0], t_trans, color=[0.875, 0.875, 1], lw=0)  # bulk = blue
+        ax.axvspan(t_trans, xx[-1], color=[0.9, 0.9, 0.9], lw=0)  # gel = grey
+        ax.axhline(t_trans, ls=':', c='k')  # indicate transition
+        ax.errorbar(xx, df, yerr=df_std, fmt='o--'+col)
+        ax.set(ylabel=label)
+        plt.setp(ax.get_xticklabels(), visible=False)  # don't show x-ticks
+    # plotting concentration profiles
+    plt_c_zero = ax_profiles.plot(xx, cc_exp[0], '-k')  # t=0 profile
+    for j, col in zip(plt_nbr, colors):  # plot rest of profiles
+        plt_c_exp = ax_profiles.plot(xx_exp, cc_exp[j], 'o', color=col)
+        plt_c_theo = ax_profiles.plot(xx, cc_theo[:, j], '--', color=col)
+    ax_profiles.axvline(t_trans, c='k', ls=':')  # indicate transition position
+    ax_profiles.set_xticks(xticks[0])  # setting x-axis labels
+    ax_profiles.set_xticklabels(xticks[1])
+    ax_profiles.set(xlabel='z-distance [$\mu$m]', ylabel='Normalized concentration')
+    ax_profiles.gca().set_xlim(left=xx[0])
+    ax_profiles.gca().set_xlim(right=xx[-1])
+    # printing legend
+    ax_profiles.legend([plt_c_zero[0], plt_c_exp[0], plt_c_theo[0]],
+                       ["c$_{exp}$ (t = 0)", "Experiment", "Numerical"],
+                       frameon=False)
+    # place colorbar in inset in current axis
+    fig.tight_layout()
+    cb1 = ax_profiles.colorbar(scalarMap, cmap=cm.jet, norm=norm, orientation='vertical')
+    cb1.set_label('Time [min]')
+
+    if save:
+        plt.savefig(savePath+'results_combined.eps', bbox_inches='tight')
+    else:
+        plt.show()

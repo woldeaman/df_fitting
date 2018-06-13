@@ -69,11 +69,9 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
                [-length_bulk]+[i*5*dx for i in range(xx_dummy[6::5].size)]]
     # plotting profiles
     t_newX_coords = int(t_best/dx + 6)
-    ps.plotBlock(xx_dummy, cc_scaled_best, ccRes, tt, t_newX_coords, locs=[1, 3], save=True,
-                 path=savePath, plt_profiles='all', end=None, xticks=xlabels)
-    # plotting averaged D and F
-    ps.plotDF(xx_dummy, D_mean, F_mean-F_mean[0], D_STD=D_std, F_STD=F_std, save=True,
-              style='.--', path=savePath, xticks=xlabels)
+    ps.figure_df_profiles(xx_dummy, xlabels, cc_scaled_best, ccRes, tt, t_newX_coords,
+                          D_mean, F_mean, D_std, F_std, plt_profiles=15, save=True,
+                          savePath=savePath)
     ps.plotDF(xx_dummy, D_best, F_best-F_best[0], save=True, style='.--', name='bestDF',
               path=savePath, xticks=xlabels)
     # plotting fitted average bulk concentration
