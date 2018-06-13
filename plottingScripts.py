@@ -373,36 +373,38 @@ def figure_df_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
     scalarMap.set_array(tt[1:]/60)  # mapping colors to time in minutes
 
     fig = plt.figure()  # create figure
-    ax_D = plt.subplot2grid((4, 1), (0, 0))
-    ax_F = plt.subplot2grid((4, 1), (1, 0), sharex=ax_D)
-    ax_profiles = plt.subplot2grid((4, 1), (2, 0), rowspan=2, sharex=ax_D)
+    ax_D = plt.subplot2grid((2, 2), (0, 0))
+    ax_F = plt.subplot2grid((2, 2), (1, 0), sharex=ax_D)
+    ax_profiles = plt.subplot2grid((2, 2), (0, 1), rowspan=2)
     # plotting D and F profiles
     for ax, df, df_std, col, label in zip([ax_D, ax_F], [D, F], [D_STD, F_STD],
-                                          ['r', 'b'], ['D [$\mu^2$/s]', 'F [k$_B$T]']):
+                                          ['r', 'b'], ['D [$\mu$m$^2$/s]', 'F [k$_B$T]']):
         ax.axvspan(xx[0], t_trans, color=[0.875, 0.875, 1], lw=0)  # bulk = blue
         ax.axvspan(t_trans, xx[-1], color=[0.9, 0.9, 0.9], lw=0)  # gel = grey
-        ax.axhline(t_trans, ls=':', c='k')  # indicate transition
-        ax.errorbar(xx, df, yerr=df_std, fmt='o--'+col)
+        ax.axvline(t_trans, ls=':', c='k')  # indicate transition
+        ax.errorbar(xx, df, yerr=df_std, fmt='.--'+col)
         ax.set(ylabel=label)
-        plt.setp(ax.get_xticklabels(), visible=False)  # don't show x-ticks
+    plt.setp(ax_D.get_xticklabels(), visible=False)  # don't show x-ticks for D plot
+    ax_F.set_xticks(xticks[0])  # setting x-axis labels
+    ax_F.set_xticklabels(xticks[1])
+    ax_F.set(xlabel='z-distance [$\mu$m]')
     # plotting concentration profiles
     plt_c_zero = ax_profiles.plot(xx, cc_exp[0], '-k')  # t=0 profile
     for j, col in zip(plt_nbr, colors):  # plot rest of profiles
-        plt_c_exp = ax_profiles.plot(xx_exp, cc_exp[j], 'o', color=col)
+        plt_c_exp = ax_profiles.plot(xx_exp, cc_exp[j], '.', color=col)
         plt_c_theo = ax_profiles.plot(xx, cc_theo[:, j], '--', color=col)
     ax_profiles.axvline(t_trans, c='k', ls=':')  # indicate transition position
     ax_profiles.set_xticks(xticks[0])  # setting x-axis labels
     ax_profiles.set_xticklabels(xticks[1])
     ax_profiles.set(xlabel='z-distance [$\mu$m]', ylabel='Normalized concentration')
-    ax_profiles.gca().set_xlim(left=xx[0])
-    ax_profiles.gca().set_xlim(right=xx[-1])
+    #ax_profiles.set_xlim(left=xx[1], right=xx[-1])
     # printing legend
     ax_profiles.legend([plt_c_zero[0], plt_c_exp[0], plt_c_theo[0]],
-                       ["c$_{exp}$ (t = 0)", "Experiment", "Numerical"],
+                       ["c$_{exp}$ (t = 0 min)", "Experiment", "Numerical"],
                        frameon=False)
     # place colorbar in inset in current axis
-    fig.tight_layout()
-    cb1 = ax_profiles.colorbar(scalarMap, cmap=cm.jet, norm=norm, orientation='vertical')
+    #fig.tight_layout()
+    cb1 = plt.colorbar(scalarMap, cmap=cm.jet, norm=norm, orientation='vertical')
     cb1.set_label('Time [min]')
 
     if save:
