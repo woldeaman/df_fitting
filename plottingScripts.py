@@ -396,7 +396,8 @@ def figure_df_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
                        ["c$_{exp}$ (t = 0 min)", "Experiment", "Numerical"],
                        frameon=False)
     # place colorbar in inset in current axis
-    cb1 = plt.colorbar(scalarMap, cmap=cm.jet, norm=norm, orientation='vertical')
+    cb1 = fig.colorbar(scalarMap, cmap=cm.jet, norm=norm, orientation='vertical',
+                       ax=ax_profiles)
     cb1.set_label('Time [min]')
 
     # plotting D and F profiles
