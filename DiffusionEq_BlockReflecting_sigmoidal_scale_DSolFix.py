@@ -69,9 +69,9 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
                ["-%i" % length_bulk]+["%i" % (i*5*dx) for i in range(xx_dummy[6::5].size)]]
     # plotting profiles
     t_newX_coords = np.round(t_best/dx + 6)
-    ps.figure_df_profiles(xx_dummy, xlabels, cc_scaled_best, ccRes, tt, t_newX_coords,
-                          D_mean, F_mean-F_mean[0], D_std, F_std, plt_profiles=10, save=True,
-                          savePath=savePath)
+    ps.figure_combined(xx_dummy, xlabels, cc_scaled_best, ccRes, tt, t_newX_coords,
+                       D_mean, F_mean-F_mean[0], D_std, F_std, plt_profiles=10, save=True,
+                       savePath=savePath)
     ps.plotDF(xx_dummy, D_best, F_best-F_best[0], save=True, style='.--', name='bestDF',
               path=savePath, xticks=xlabels)
     # plotting fitted average bulk concentration

@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from matplotlib.ticker import FormatStrFormatter
 import matplotlib as mpl
 import mpltex  # for acs style figures
 import os
@@ -352,9 +353,9 @@ def plot_average_bulk_concentration(c_avg_bulk, tt, savePath):
 
 
 @mpltex.acs_decorator  # making acs-style figures
-def figure_df_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
-                       D_STD, F_STD, plt_profiles='all', save=False,
-                       savePath=os.getcwd()):
+def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
+                    D_STD, F_STD, plt_profiles='all', save=False,
+                    savePath=os.getcwd()):
     """Make nice figure for D,F profiles and concentration profiles."""
     # setting number of profiles to plot
     c_nbr = len(cc_exp)  # number of profiles
@@ -367,7 +368,7 @@ def figure_df_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
     diff = cc_theo[:, 1].size - cc_exp[1].size  # difference in lengths
     xx_exp = xx[diff:]  # truncated vector for plotting experimental profiles
     # setting up the colormap and color range
-    colors = [cm.jet(x) for x in np.linspace(0, 1, c_nbr)]
+    colors = [cm.jet(x) for x in np.linspace(0, 1, plt_nbr.size)]
     norm = mpl.colors.Normalize(vmin=tt[1]/60, vmax=tt[-1]/60)
     scalarMap = cm.ScalarMappable(norm=norm, cmap=cm.jet)
     scalarMap.set_array(tt[1:]/60)  # mapping colors to time in minutes
@@ -400,10 +401,17 @@ def figure_df_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
                                           ['r', 'b'], ['D [$\mu$m$^2$/s]', 'F [k$_B$T]']):
         ax.errorbar(xx, df, yerr=df_std, fmt='.--'+col)
         ax.set(ylabel=label)
-        ax.get_yaxis().set_label_coords(-0.17, 0.5)
-        ax.set_ylim([np.min(df) - 0.1*np.max(df), np.max(df) + 0.1*np.max(df)])
+        ax.get_yaxis().set_label_coords(-0.21, 0.5)
+        ax.axhline(df[-1], ls=':', c=col)
+    ax_F.set(xlabel='z-distance [$\mu$m]')  # set x-axes
     plt.setp(ax_D.get_xticklabels(), visible=False)  # don't show x-ticks for D plot
-    ax_F.set(xlabel='z-distance [$\mu$m]')
+    # indicate values in solution and in bulk
+    yy_D, yy_F = [0, np.min(D), np.max(D)], [np.min(F), np.max(F)]
+    for ax, ticks, col, form in zip([ax_F, ax_D], [yy_F, yy_D], ['blue', 'red'], ['%.2f', '%.1f']):
+        ax.set_yticks(ticks)
+        ax.get_yticklabels()[-1].set_color(col)
+        ax.yaxis.set_major_formatter(FormatStrFormatter(form))
+    ax_D.get_yticklabels()[-2].set_color('red')
 
     # nicen up plots with background colors
     for ax in [ax_F, ax_D, ax_profiles]:
