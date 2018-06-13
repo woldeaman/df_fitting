@@ -379,14 +379,13 @@ def figure_df_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
     # plotting D and F profiles
     for ax, df, df_std, col, label in zip([ax_D, ax_F], [D, F], [D_STD, F_STD],
                                           ['r', 'b'], ['D [$\mu$m$^2$/s]', 'F [k$_B$T]']):
-        ax.axvspan(xx[0], t_trans, color=[0.875, 0.875, 1], lw=0)  # bulk = blue
-        ax.axvspan(t_trans, xx[-1], color=[0.9, 0.9, 0.9], lw=0)  # gel = grey
+        ax.axvspan(xx[0]-xx[1], t_trans, color=[0.875, 0.875, 1], lw=0)  # bulk = blue
+        ax.axvspan(t_trans, xx[-1]+xx[1], color=[0.9, 0.9, 0.9], lw=0)  # gel = grey
         ax.axvline(t_trans, ls=':', c='k')  # indicate transition
         ax.errorbar(xx, df, yerr=df_std, fmt='.--'+col)
         ax.set(ylabel=label)
+        ax.set_xlim([xx[0]-xx[1], xx[-1]+xx[1]])
     plt.setp(ax_D.get_xticklabels(), visible=False)  # don't show x-ticks for D plot
-    ax_F.set_xticks(xticks[0])  # setting x-axis labels
-    ax_F.set_xticklabels(xticks[1])
     ax_F.set(xlabel='z-distance [$\mu$m]')
     # plotting concentration profiles
     plt_c_zero = ax_profiles.plot(xx, cc_exp[0], '-k')  # t=0 profile
@@ -394,20 +393,26 @@ def figure_df_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
         plt_c_exp = ax_profiles.plot(xx_exp, cc_exp[j], '.', color=col)
         plt_c_theo = ax_profiles.plot(xx, cc_theo[:, j], '--', color=col)
     ax_profiles.axvline(t_trans, c='k', ls=':')  # indicate transition position
-    ax_profiles.set_xticks(xticks[0])  # setting x-axis labels
-    ax_profiles.set_xticklabels(xticks[1])
     ax_profiles.set(xlabel='z-distance [$\mu$m]', ylabel='Normalized concentration')
-    #ax_profiles.set_xlim(left=xx[1], right=xx[-1])
+    # setting correct x-labels and x-ticks
+    for ax in [ax_F, ax_profiles]:
+        ax.set_xticks(xticks[0])
+        ax.set_xticklabels(xticks[1])
     # printing legend
     ax_profiles.legend([plt_c_zero[0], plt_c_exp[0], plt_c_theo[0]],
                        ["c$_{exp}$ (t = 0 min)", "Experiment", "Numerical"],
                        frameon=False)
     # place colorbar in inset in current axis
-    #fig.tight_layout()
     cb1 = plt.colorbar(scalarMap, cmap=cm.jet, norm=norm, orientation='vertical')
     cb1.set_label('Time [min]')
+
+    # for double column figures in acs style format
+    w_double = 7  # inch size for width of double column figure for ACS journals
+    width, height = fig.get_size_inches()
+    fig.set_size_inches(w_double, height*2)  # double height because of two rows
 
     if save:
         plt.savefig(savePath+'results_combined.eps', bbox_inches='tight')
     else:
+        fig.tight_layout()
         plt.show()

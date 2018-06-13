@@ -70,7 +70,7 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
     # plotting profiles
     t_newX_coords = int(t_best/dx + 6)
     ps.figure_df_profiles(xx_dummy, xlabels, cc_scaled_best, ccRes, tt, t_newX_coords,
-                          D_mean, F_mean, D_std, F_std, plt_profiles=15, save=True,
+                          D_mean, F_mean, D_std, F_std, plt_profiles=10, save=True,
                           savePath=savePath)
     ps.plotDF(xx_dummy, D_best, F_best-F_best[0], save=True, style='.--', name='bestDF',
               path=savePath, xticks=xlabels)
