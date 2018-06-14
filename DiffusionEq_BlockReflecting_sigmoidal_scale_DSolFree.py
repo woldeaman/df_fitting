@@ -370,7 +370,7 @@ def main():
         print('\nDoing analysis only.')
         res = np.load('result.npy')
         print('Overall %i runs have been performed.' % res.size)
-        analysis(np.array(res), xx, cc, tt, dxx_dist, dxx_width, per=1)
+        analysis(np.array(res), xx, cc, tt, dxx_dist, dxx_width, per=0.1)
         print('\nPlots have been made and data was extraced and saved.')
         sys.exit()
 
