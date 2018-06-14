@@ -20,10 +20,10 @@ startTime = time.time()  # start measuring run time
 DSol = 55
 
 
-def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
-              best_params, avg_params, std_params, D_mean, D_best, F_mean, F_best,
-              D_std, F_std, c_bulk_mean, c_bulk_std, c_bulk_best, top_percent,
-              savePath, x_tot=1780):
+def save_data(xx, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_theo_mean, tt,
+              errors, t_best, t_mean, best_params, avg_params, std_params, D_mean,
+              D_best, F_mean, F_best, D_std, F_std, c_bulk_mean, c_bulk_std,
+              c_bulk_best, top_percent, savePath, x_tot=1780):
     """Make plots and save analyzed data."""
     # header for txt file in which concentration profiles will be saved
     header_cons = ''
@@ -31,7 +31,9 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
         header_cons += ('column%i: c-profile [micro_M] for t_%i = %i min\n'
                         % (i+2, i, int(t/60)))
     # saving numerical profiles
-    np.savetxt(savePath+'concentrationRes.txt', ccRes, delimiter=',',
+    np.savetxt(savePath+'cc_theo_best.txt', cc_theo_best, delimiter=',',
+               header='Numerically computed concentration profiles\n'+header_cons)
+    np.savetxt(savePath+'cc_theo_avg.txt', cc_theo_mean, delimiter=',',
                header='Numerically computed concentration profiles\n'+header_cons)
     # saving averaged DF
     np.savetxt(savePath+'DF_avg.txt', np.c_[D_mean, D_std, F_mean-F_mean[0], F_std],
@@ -64,18 +66,26 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, ccRes, tt, errors, t_best,
     # reconstruct original x-vector
     length_bulk, dx = (x_tot - np.max(xx)), (xx[1] - xx[0])
     # for labeling the x-axis correctly
-    xx_dummy = np.arange(ccRes[:, 0].size)
+    xx_dummy = np.arange(cc_theo_best[:, 0].size)
     xlabels = [[xx_dummy[0]]+[x for x in xx_dummy[6::5]],
                ["-%i" % length_bulk]+["%i" % (i*5*dx) for i in range(xx_dummy[6::5].size)]]
-    # plotting profiles
-    t_newX_coords = np.round(t_best/dx + 6)
-    ps.figure_combined(xx_dummy, xlabels, cc_scaled_best, ccRes, tt, t_newX_coords,
-                       D_mean, F_mean-F_mean[0], D_std, F_std, plt_profiles=10, save=True,
-                       savePath=savePath)
-    ps.plotDF(xx_dummy, D_best, F_best-F_best[0], save=True, style='.--', name='bestDF',
-              path=savePath, xticks=xlabels)
+    # plotting profiles for averaged and best parameters
+    t_best = np.round(t_best/dx + 6)  # scale transition to new x-vector
+    t_mean = np.round(t_mean/dx + 6)
+    # compute error for averaged parameters
+    residuals = np.array([c_exp - c_num[6:] for c_exp, c_num in zip(cc_scaled_means[1:],
+                                                                    cc_theo_mean[:, 1:].T)])
+    error_mean = np.sqrt(np.sum(residuals**2) / (cc_scaled_means[1].size *
+                                                 len(cc_scaled_means[1:])))
+
+    ps.figure_combined(xx_dummy, xlabels, cc_scaled_best, cc_theo_best, tt, t_best,
+                       D_best, F_best-F_best[0], np.zeros(D_best.size), np.zeros(F_best.size),
+                       errors[0], plt_profiles=10, save=True, savePath=savePath, suffix='best')
+    ps.figure_combined(xx_dummy, xlabels, cc_scaled_means, cc_theo_mean, tt, t_mean,
+                       D_mean, F_mean-F_mean[0], D_std, F_std, error_mean, plt_profiles=10, save=True,
+                       savePath=savePath, suffix='avg')
     # plotting fitted average bulk concentration
-    ps.plot_average_bulk_concentration(c_bulk_best, tt[1:], savePath)
+    ps.plot_average_bulk_concentration(c_bulk_mean, c_bulk_std, tt[1:], savePath)
 
     # saving data to excel spreadsheet
     workbook = xl.Workbook(savePath+'results.xlsx')
@@ -295,10 +305,12 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, per=1):
     # fitted values for re-scaling concentration profiles
     scalings_mean, scalings_std, scalings_best = averages[6:], stdevs[6:], best_results[6:]
 
-    # computing rate matrix from best results
-    W = fp.WMatrixVar(D_best, F_best, start=4, end=None, deltaXX=dxx_dist, con=True)
+    # computing rate matrix from best and averaged results
+    W_best = fp.WMatrixVar(D_best, F_best, start=4, end=None, deltaXX=dxx_dist, con=True)
+    W_mean = fp.WMatrixVar(D_mean, F_mean, start=4, end=None, deltaXX=dxx_dist, con=True)
     # computing concentration profiles
-    ccRes = np.array([fp.calcC(cc[0], t, W=W) for t in tt]).T
+    cc_theo_best = np.array([fp.calcC(cc[0], t, W=W_best) for t in tt]).T
+    cc_theo_mean = np.array([fp.calcC(cc[0], t, W=W_mean) for t in tt]).T
 
     # compute re-scaled concentration profiles
     cc_best, cc_mean = [cc[0]], [cc[0]]
@@ -311,9 +323,10 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, per=1):
     # error from gauß error propagation
     c_bulk_std = compute_c_bulk_stdev(cc, scalings_std, xx)
 
-    save_data(xx, cc_best, cc_mean, ccRes, tt, error, t_best,
-              best_results, averages, stdevs, D_mean, D_best, F_mean, F_best,
-              D_std, F_std, c_bulk_mean, c_bulk_std, c_bulk_best, per, savePath)
+    save_data(xx, cc_best, cc_mean, cc_theo_best, cc_theo_mean, tt,
+              error, t_best, t_mean, best_results, averages, stdevs, D_mean,
+              D_best, F_mean, F_best, D_std, F_std, c_bulk_mean, c_bulk_std,
+              c_bulk_best, per, savePath)
 
 
 def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, check=False):
@@ -376,7 +389,7 @@ def main():
         print('\nDoing analysis only.')
         res = np.load('result.npy')
         print('Overall %i runs have been performed.' % res.size)
-        analysis(np.array(res), xx, cc, tt, dxx_dist, dxx_width, per=0.1)
+        analysis(np.array(res), xx, cc, tt, dxx_dist, dxx_width, per=1)
         print('\nPlots have been made and data was extraced and saved.')
         sys.exit()
 
@@ -391,7 +404,7 @@ def main():
             print('\n\nScript has been terminated.\nData will now be analyzed...')
             break
 
-    analysis(np.array(results), xx, cc, tt, dxx_dist, dxx_width, per=0.1)
+    analysis(np.array(results), xx, cc, tt, dxx_dist, dxx_width, per=1)
 
     return runs  # returns number of runs in order to compute average time per run
 

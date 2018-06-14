@@ -342,19 +342,19 @@ def plotBlock(xx, cc, ccRes, tt, t_sig=None, locs=[0, 2], save=False, path=None,
 
 
 @mpltex.acs_decorator  # making acs-style figures
-def plot_average_bulk_concentration(c_avg_bulk, tt, savePath):
+def plot_average_bulk_concentration(c_avg_bulk, c_avg_bulk_std, tt, savePath):
     """Plot fitted average bulk concentration for each profile."""
     # make plot
     plt.figure()
-    plt.plot(tt/60, c_avg_bulk, 'k-')
+    plt.errorbar(tt/60, c_avg_bulk, yerr=c_avg_bulk_std, fmt='k-')
     plt.xlabel('Timepoint [min]')
     plt.ylabel('$\\overline{c_{bulk}}$')
     plt.savefig(savePath+'c_bulk.pdf', bbox_inches='tight')
 
 
 @mpltex.acs_decorator  # making acs-style figures
-def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
-                    D_STD, F_STD, plt_profiles='all', save=False,
+def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD,
+                    error, plt_profiles='all', suffix='', save=False,
                     savePath=os.getcwd()):
     """Make nice figure for D,F profiles and concentration profiles."""
     # setting number of profiles to plot
@@ -392,6 +392,8 @@ def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
     ax_profiles.legend([plt_c_zero[0], plt_c_exp[0], plt_c_theo[0]],
                        ["c$_{exp}$ (t = 0 min)", "Experiment", "Numerical"],
                        frameon=False)
+    # show also computed error
+    ax_profiles.text(0.05, 0.02, '$\sigma$ = $\pm$ %.3f' % error)
     # place colorbar in inset in current axis
     fig.colorbar(scalarMap, cmap=cm.jet, norm=norm, orientation='vertical',
                  ax=ax_profiles, label='Time [min]', pad=0.0125)
@@ -403,6 +405,7 @@ def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
         ax.set(ylabel=label)
         ax.get_yaxis().set_label_coords(-0.21, 0.5)
         ax.axhline(df[-1], ls=':', c=col)
+        ax.set_ylim([0 - 0.1*np.max(df), np.max(df) + np.max(df_std) + 0.1*np.max(df)])
     ax_F.set(xlabel='z-distance [$\mu$m]')  # set x-axes
     plt.setp(ax_D.get_xticklabels(), visible=False)  # don't show x-ticks for D plot
     # indicate values in solution and in bulk
@@ -429,6 +432,6 @@ def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F,
     fig.tight_layout(pad=0.5, w_pad=0.55)
 
     if save:
-        plt.savefig(savePath+'results_combined.eps')
+        plt.savefig(savePath+'results_combined_%s.eps' % suffix)
     else:
         plt.show()
