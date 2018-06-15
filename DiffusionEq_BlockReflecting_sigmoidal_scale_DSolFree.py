@@ -67,11 +67,11 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_theo_mean, t
     xlabels = [[xx_dummy[0]]+[x for x in xx_dummy[6::5]],
                ["-%i" % length_bulk]+["%i" % (i*5*dx) for i in range(xx_dummy[6::5].size)]]
     # plotting profiles for averaged and best parameters
-    t_best = np.round(t_best/dx + 6)  # scale transition to new x-vector
-    t_mean = np.round(t_mean/dx + 6)
+    t_best = np.round(t_best/dx + 10)  # scale transition to new x-vector
+    t_mean = np.round(t_mean/dx + 10)
     # compute error for averaged parameters
-    residuals = np.array([c_exp - c_num[6:] for c_exp, c_num in zip(cc_scaled_means[1:],
-                                                                    cc_theo_mean[:, 1:].T)])
+    residuals = np.array([c_exp - c_num[10:] for c_exp, c_num in zip(cc_scaled_means[1:],
+                                                                     cc_theo_mean[:, 1:].T)])
     error_mean = np.sqrt(np.sum(residuals**2) / (cc_scaled_means[1].size *
                                                  len(cc_scaled_means[1:])))
     ps.figure_combined(xx_dummy, xlabels, cc_scaled_best, cc_theo_best, tt, t_best,
@@ -172,7 +172,7 @@ def average_data(result, xx, cc, top_percent=1):
     F_mean_pre = np.array([fp.sigmoidalDF(F_mean, t_mean, d_mean, x) for x in xx])
     D_best = np.array([fp.sigmoidalDF(D_best, t_best, d_best, x) for x in xx])
     F_best = np.array([fp.sigmoidalDF(F_best, t_best, d_best, x) for x in xx])
-    segments = np.concatenate((np.zeros(6), np.arange(xx.size))).astype(int)
+    segments = np.concatenate((np.zeros(10), np.arange(xx.size))).astype(int)
     D_mean, F_mean = fp.computeDF(D_mean_pre, F_mean_pre, shape=segments)
     D_best, F_best = fp.computeDF(D_best, F_best, shape=segments)
 
@@ -269,15 +269,15 @@ def discretization_Block(xx, x_tot=1780):
     x_2 = np.max(xx)  # length of segment 2, gel phase
     x_1 = x_tot - x_2  # length of segment 1, bulk phase
 
-    # defining discretization, in bulk first 4 bins with dx1, next 2 bins with dx2
+    # defining discretization, in bulk first 8 bins with dx1, next 2 bins with dx2
     dx2 = dx_og  # in gel
-    dx1 = (x_1-2.5*dx2)/3.5  # in bulk
+    dx1 = (x_1-2.5*dx2)/7.5  # in bulk
 
     # vectors for distance between bins dxx_dist and bin width dxx_width
-    dxx_width = np.concatenate((np.ones(3)*dx1, np.ones(1)*(dx1+dx2)/2,
+    dxx_width = np.concatenate((np.ones(7)*dx1, np.ones(1)*(dx1+dx2)/2,
                                 np.ones(2+dim)*dx2))  # used for concentration
     # dxx_dist contains distance to previous bin, at first bin same dx is taken
-    dxx_dist = np.concatenate((np.ones(4)*dx1,  # used for WMatrix
+    dxx_dist = np.concatenate((np.ones(8)*dx1,  # used for WMatrix
                                np.ones(2+dim+1)*dx2))
     # dxx_dist has one element more than dxx_width because it's for WMatrix
     # computation dx at i+1 is necccessary --> needed for last bin too
@@ -333,11 +333,11 @@ def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, check=False):
     # compute sigmoidal D, F profiles
     D = np.array([fp.sigmoidalDF(d, t_sig, d_sig, x) for x in xx])
     F = np.array([fp.sigmoidalDF(f, t_sig, d_sig, x) for x in xx])
-    # now keeping fixed D, F in first 6 bins throughout bulk
-    segments = np.concatenate((np.zeros(6), np.arange(D.size))).astype(int)
+    # now keeping fixed D, F in first 10 bins throughout bulk
+    segments = np.concatenate((np.zeros(10), np.arange(D.size))).astype(int)
     D, F = fp.computeDF(D, F, shape=segments)
-    # computing WMatrix, start smaller than 6, because D, F is const. only there
-    W = fp.WMatrixVar(D, F, start=4, end=None, deltaXX=dxx_dist, con=True)
+    # computing WMatrix, start smaller than 10, because D, F is const. only there
+    W = fp.WMatrixVar(D, F, start=8, end=None, deltaXX=dxx_dist, con=True)
 
     if check:  # checking for conservation of concentration
         cross_checking(W, cc, tt, dxx_width, dxx_dist)
@@ -348,7 +348,7 @@ def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, check=False):
     cc_norm = [c*norm for c, norm in zip(cc[1:], scalings)]
 
     # compute residual vector and reshape into one long vector
-    RR = np.array([c_exp - c_num[6:] for c_exp, c_num in zip(cc_norm, cc_theo)]).T
+    RR = np.array([c_exp - c_num[10:] for c_exp, c_num in zip(cc_norm, cc_theo)]).T
     RRn = RR.reshape(RR.size)  # residual vector contains all deviations
 
     return RRn
