@@ -419,8 +419,12 @@ def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
     # nicen up plots with background colors
     dx_2 = abs(xx[-2]-xx[-1])  # bin size in second segment
     for ax in [ax_F, ax_D, ax_profiles]:
-        ax.set_xticks(xticks[0])
-        ax.set_xticklabels(xticks[1])
+        if ax is ax_profiles:
+            skips = 1
+        else:  # for D, F plots only use half of xticks
+            skips = 2
+        ax.set_xticks(xticks[0][::skips])
+        ax.set_xticklabels(xticks[1][::skips])
         ax.axvline(t_trans, ls=':', c='k')  # indicate transition
         ax.axvspan(-2*dx_2, t_trans, color=[0.875, 0.875, 1], lw=0)  # bulk = blue
         ax.axvspan(t_trans, xx[-1]+2*dx_2, color=[0.9, 0.9, 0.9], lw=0)  # gel = grey
