@@ -334,9 +334,6 @@ def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, check=False):
     # compute sigmoidal D, F profiles
     D = np.array([fp.sigmoidalDF(d, t_sig, d_sig, x) for x in xx])
     F = np.array([fp.sigmoidalDF(f, t_sig, d_sig, x) for x in xx])
-    # TODO: implement this in a way to fit the sigmoid function in entire x-range
-    # not only in area were experiment was measured, then segments is not needed...
-    # now keeping fixed D, F in first 6 bins throughout bulk
     segments = np.concatenate((np.zeros(6), np.arange(D.size))).astype(int)
     D, F = fp.computeDF(D, F, shape=segments)
     # computing WMatrix, start smaller than 6, because D, F is const. only there
