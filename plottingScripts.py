@@ -363,7 +363,7 @@ def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
         plt_nbr = np.arange(1, c_nbr)  # plot all profiles
     else:
         skip = int(c_nbr/plt_profiles)
-        plt_nbr = np.arange(1, c_nbr, skip)
+        plt_nbr = np.arange(skip, c_nbr, skip)
     # creating x-vector for plotting experimental profiles
     diff = cc_theo[:, 1].size - cc_exp[1].size  # difference in lengths
     xx_exp = xx[diff:]  # truncated vector for plotting experimental profiles
@@ -417,13 +417,14 @@ def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
     ax_D.get_yticklabels()[-2].set_color('red')
 
     # nicen up plots with background colors
+    dx_2 = abs(xx[-2]-xx[-1])  # bin size in second segment
     for ax in [ax_F, ax_D, ax_profiles]:
         ax.set_xticks(xticks[0])
         ax.set_xticklabels(xticks[1])
         ax.axvline(t_trans, ls=':', c='k')  # indicate transition
-        ax.axvspan(xx[0]-xx[1], t_trans, color=[0.875, 0.875, 1], lw=0)  # bulk = blue
-        ax.axvspan(t_trans, xx[-1]+xx[1], color=[0.9, 0.9, 0.9], lw=0)  # gel = grey
-        ax.set_xlim([xx[0]-xx[1], xx[-1]+xx[1]])
+        ax.axvspan(-2*dx_2, t_trans, color=[0.875, 0.875, 1], lw=0)  # bulk = blue
+        ax.axvspan(t_trans, xx[-1]+2*dx_2, color=[0.9, 0.9, 0.9], lw=0)  # gel = grey
+        ax.set_xlim([xx[0]-2*dx_2, xx[-1]+2*dx_2])
 
     # for double column figures in acs style format
     w_double = 7  # inch size for width of double column figure for ACS journals

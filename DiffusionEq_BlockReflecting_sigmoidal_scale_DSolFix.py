@@ -20,7 +20,7 @@ startTime = time.time()  # start measuring run time
 DSol = 55
 
 
-def save_data(xx, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_theo_mean, tt,
+def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_theo_mean, tt,
               errors, t_best, t_mean, best_params, avg_params, std_params, D_mean,
               D_best, F_mean, F_best, D_std, F_std, c_bulk_mean, c_bulk_std,
               c_bulk_best, top_percent, savePath, x_tot=1780):
@@ -65,13 +65,14 @@ def save_data(xx, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_theo_mean, t
 
     # reconstruct original x-vector
     length_bulk, dx = (x_tot - np.max(xx)), (xx[1] - xx[0])
-    # for labeling the x-axis correctly
-    xx_dummy = np.arange(cc_theo_best[:, 0].size)
-    xlabels = [[xx_dummy[0]]+[x for x in xx_dummy[6::5]],
-               ["-%i" % length_bulk]+["%i" % (i*5*dx) for i in range(xx_dummy[6::5].size)]]
+    # for labeling the x-axis correctly, first 4 bins at different separation
+    xx_dummy = np.concatenate(([0, 6, 12, 18], np.arange(cc_theo_best[:, 0].size-4)+19))
+    xlabels = [[xx_dummy[0], xx_dummy[2]]+[x for x in xx_dummy[6::5]],
+               ["-%i" % length_bulk, "-%i" % (length_bulk-np.sum(dxx_dist[:2]))] +
+               ["%i" % (i*5*dx) for i in range(xx_dummy[6::5].size)]]
     # plotting profiles for averaged and best parameters
-    t_best = np.round(t_best/dx + 6)  # scale transition to new x-vector
-    t_mean = np.round(t_mean/dx + 6)
+    t_best = np.round(t_best/dx) + 19 + 2  # scale transition to new x-vector
+    t_mean = np.round(t_mean/dx) + 19 + 2
     # compute error for averaged parameters
     residuals = np.array([c_exp - c_num[6:] for c_exp, c_num in zip(cc_scaled_means[1:],
                                                                     cc_theo_mean[:, 1:].T)])
@@ -323,7 +324,7 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, per=1):
     # error from gauß error propagation
     c_bulk_std = compute_c_bulk_stdev(cc, scalings_std, xx)
 
-    save_data(xx, cc_best, cc_mean, cc_theo_best, cc_theo_mean, tt,
+    save_data(xx, dxx_dist, cc_best, cc_mean, cc_theo_best, cc_theo_mean, tt,
               error, t_best, t_mean, best_results, averages, stdevs, D_mean,
               D_best, F_mean, F_best, D_std, F_std, c_bulk_mean, c_bulk_std,
               c_bulk_best, per, savePath)
