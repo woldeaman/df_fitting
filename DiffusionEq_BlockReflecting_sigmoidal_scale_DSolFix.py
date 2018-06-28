@@ -23,7 +23,7 @@ DSol = 55
 def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_theo_mean, tt,
               errors, t_best, t_mean, best_params, avg_params, std_params, D_mean,
               D_best, F_mean, F_best, D_std, F_std, c_bulk_mean, c_bulk_std,
-              c_bulk_best, top_percent, savePath, x_tot=1780):
+              c_bulk_best, nbr_runs, crit_err, savePath, x_tot=1780):
     """Make plots and save analyzed data."""
     # header for txt file in which concentration profiles will be saved
     header_cons = ''
@@ -53,7 +53,8 @@ def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_th
 
     # saving Error of top 1% of runs
     np.savetxt(savePath+'minError.txt', errors, delimiter=',',
-               header=('Minimal error for top %.2f %% runs.' % (top_percent*100)))
+               header=(('Minimal error averaged over %i/%i runs, ' % (errors.size, nbr_runs)) +
+                       ('%i deviation from minimal error.') % crit_err*100))
     # saving fitted average bulk concentrations
     np.savetxt(savePath+'c_bulk_avg.txt', np.c_[c_bulk_mean, c_bulk_std],
                delimiter=',',
@@ -199,7 +200,7 @@ def average_data(result, xx, cc, crit_err):
     DSTD, FSTD = fp.computeDF(DSTD_pre, FSTD_pre, shape=segments)
 
     return (best_results, averages, stdevs, F_best, D_best, t_best, d_best,
-            F_mean, D_mean, t_mean, d_mean, FSTD, DSTD, error.sort)
+            F_mean, D_mean, t_mean, d_mean, FSTD, DSTD, error.sort())
 
 
 def cross_checking(W, cc, tt, dxx_width, dxx_dist):
@@ -330,7 +331,7 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, crit_err):
     save_data(xx, dxx_dist, cc_best, cc_mean, cc_theo_best, cc_theo_mean, tt,
               error, t_best, t_mean, best_results, averages, stdevs, D_mean,
               D_best, F_mean, F_best, D_std, F_std, c_bulk_mean, c_bulk_std,
-              c_bulk_best, crit_err, savePath)
+              c_bulk_best, result.size, crit_err, savePath)
 
 
 def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, check=False):
