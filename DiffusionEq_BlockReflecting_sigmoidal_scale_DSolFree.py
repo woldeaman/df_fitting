@@ -191,7 +191,7 @@ def average_data(result, xx, cc, crit_err):
                                                   F_std[1])**2) for x in xx])
     # now keeping fixed stdev of D, F in first 6 bins
     DSTD, FSTD = fp.computeDF(DSTD_pre, FSTD_pre, shape=segments)
-    error_sorted = np.sort(error)  # sort errors for saving
+    error_sorted = np.sort(error[indices])  # sort errors for used runs
 
     return (best_results, averages, stdevs, F_best, D_best, t_best, d_best,
             F_mean, D_mean, t_mean, d_mean, FSTD, DSTD, error_sorted)
