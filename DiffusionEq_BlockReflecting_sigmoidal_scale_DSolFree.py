@@ -143,25 +143,28 @@ def compute_avg_c_bulk(cc_scaled, xx, dxx_width, x_tot=1780):
     return c_bulk_avg
 
 
-def average_data(result, xx, cc, top_percent=1):
-    """Gather and average data from all optimization runs."""
-    # number if top x% of the runs
-    nbr = np.ceil(top_percent*len(result)).astype(int)
+def average_data(result, xx, cc, crit_err):
+    """
+    Gather and average data from all optimization runs.
 
+    crit_err    -   describes the percent of deviation from minimal error
+                    for which results will be included in average
+    """
     # used to later compute normalized error
     n_profiles = len(cc)  # number of profiles
     bins = cc[1].size  # number of bins
     combis = n_profiles-1  # number of combinations for different c-profiles
 
     # loading error values, factor two, because of cost function definition
-    error = [np.sqrt(2*res.cost / (bins*combis)) for res in result]
-    indices = np.argsort(error)  # for sorting according to error
-    error_sorted = [error[idx] for idx in indices[:nbr]]
+    error = np.array([np.sqrt(2*res.cost / (bins*combis)) for res in result])
+    #  now determine results to include for averaging, based on distance to minimal error
+    err_lim = np.min(error) + np.min(error)*crit_err  # limit in error to include for averaging
+    indices = error < err_lim  # index mask for results to include
 
     # gathering mean for all parameters
-    averages = np.mean([result[idx].x for idx in indices[:nbr]], axis=0)
-    stdevs = np.std([result[idx].x for idx in indices[:nbr]], axis=0)
-    best_results = result[indices[0]].x
+    averages = np.mean([res.x for res in result[indices]], axis=0)
+    stdevs = np.std([res.x for res in result[indices]], axis=0)
+    best_results = result[np.argmin(error)].x
 
     # splitting up parameters to compute D, F profiles
     D_mean, F_mean, t_mean, d_mean = averages[:2], averages[2:4], averages[4], averages[5]
@@ -189,7 +192,7 @@ def average_data(result, xx, cc, top_percent=1):
     DSTD, FSTD = fp.computeDF(DSTD_pre, FSTD_pre, shape=segments)
 
     return (best_results, averages, stdevs, F_best, D_best, t_best, d_best,
-            F_mean, D_mean, t_mean, d_mean, FSTD, DSTD, error_sorted)
+            F_mean, D_mean, t_mean, d_mean, FSTD, DSTD, error.sort)
 
 
 def cross_checking(W, cc, tt, dxx_width, dxx_dist):
@@ -286,7 +289,7 @@ def discretization_Block(xx, x_tot=1780):
     return dxx_dist, dxx_width
 
 
-def analysis(result, xx, cc, tt, dxx_dist, dxx_width, per=1):
+def analysis(result, xx, cc, tt, dxx_dist, dxx_width, crit_err):
     """Analyze results from optimization runs."""
     # create new folder to save results in
     savePath = os.path.join(os.getcwd(), 'results/')
@@ -295,7 +298,7 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, per=1):
 
     # gather data from results objects
     (best_results, averages, stdevs, F_best, D_best, t_best, d_best,
-     F_mean, D_mean, t_mean, d_mean, F_std, D_std, error) = average_data(result, xx, cc, per)
+     F_mean, D_mean, t_mean, d_mean, F_std, D_std, error) = average_data(result, xx, cc, crit_err)
     # fitted values for re-scaling concentration profiles
     scalings_mean, scalings_std, scalings_best = averages[6:], stdevs[6:], best_results[6:]
 
@@ -320,7 +323,7 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, per=1):
     save_data(xx, dxx_dist, cc_best, cc_mean, cc_theo_best, cc_theo_mean, tt,
               error, t_best, t_mean, best_results, averages, stdevs, D_mean,
               D_best, F_mean, F_best, D_std, F_std, c_bulk_mean, c_bulk_std,
-              c_bulk_best, per, savePath)
+              c_bulk_best, crit_err, savePath)
 
 
 def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, check=False):
@@ -382,7 +385,7 @@ def main():
         print('\nDoing analysis only.')
         res = np.load('result.npy')
         print('Overall %i runs have been performed.' % res.size)
-        analysis(np.array(res), xx, cc, tt, dxx_dist, dxx_width, per=1)
+        analysis(np.array(res), xx, cc, tt, dxx_dist, dxx_width, crit_err=0.3)
         print('\nPlots have been made and data was extraced and saved.')
         sys.exit()
 
@@ -397,7 +400,7 @@ def main():
             print('\n\nScript has been terminated.\nData will now be analyzed...')
             break
 
-    analysis(np.array(results), xx, cc, tt, dxx_dist, dxx_width, per=1)
+    analysis(np.array(results), xx, cc, tt, dxx_dist, dxx_width, crit_err=0.3)
 
     return runs  # returns number of runs in order to compute average time per run
 
