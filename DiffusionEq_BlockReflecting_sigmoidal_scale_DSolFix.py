@@ -54,7 +54,7 @@ def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_th
     # saving Error of top 1% of runs
     np.savetxt(savePath+'minError.txt', errors, delimiter=',',
                header=(('Minimal error averaged over %i/%i runs, ' % (errors.size, nbr_runs)) +
-                       ('%i%% deviation from minimal error.') % (crit_err*100)))
+                       ('%i%% deviation from minimal error included.') % (crit_err*100)))
     # saving fitted average bulk concentrations
     np.savetxt(savePath+'c_bulk_avg.txt', np.c_[c_bulk_mean, c_bulk_std],
                delimiter=',',
