@@ -90,17 +90,16 @@ def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_th
     worksheet = workbook.add_worksheet()
     bold = workbook.add_format({'bold': True})
     # writing headers
-    worksheet.write('A1', 'D_sol_avg [µm^2/s]', bold)
-    worksheet.write('C1', 'D_sol_best [µm^2/s]', bold)
-    worksheet.write('A2', 'D_gel_avg [µm^2/s]', bold)
-    worksheet.write('C2', 'D_gel_best [µm^2/s]', bold)
-    worksheet.write('A3', 'F_gel_avg [kT]', bold)
-    worksheet.write('C3', 'F_gel_best [kT]', bold)
-    worksheet.write('A4', 't_avg [µm]', bold)
-    worksheet.write('C4', 't_best [µm]', bold)
-    worksheet.write('A5', 'd_avg [µm]', bold)
-    worksheet.write('C5', 'd_best [µm]', bold)
-    worksheet.write('A8', 'min Err.', bold)
+    worksheet.write('A1', 'Parameter', bold)
+    worksheet.write('B1', 'Averaged Results', bold)
+    worksheet.write('C1', 'Standart Deviation', bold)
+    worksheet.write('D1', 'Best Results', bold)
+    worksheet.write('A2', 'D_sol [µm^2/s]', bold)
+    worksheet.write('A3', 'D_gel [µm^2/s]', bold)
+    worksheet.write('A4', 'F_gel [kT]', bold)
+    worksheet.write('A5', 't_sig [µm]', bold)
+    worksheet.write('A6', 'd_sig [µm]', bold)
+    worksheet.write('A7', 'error', bold)
 
     # gather original parameters
     means = [avg_params[0], avg_params[1], (avg_params[3]-avg_params[2]),
@@ -111,13 +110,14 @@ def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_th
              best_params[4], best_params[5]]
 
     # writing entries, storing original parameters for sigmoidal curves
-    for i, data in enumerate(zip(means, stdevs)):
-        worksheet.write('B%i' % (i+1), '%.2f +/- %.2f' % (data[0], data[1]))
-    for i, best in enumerate(bests):
-        worksheet.write('D%i' % (i+1), '%.2f' % best)
-    worksheet.write('B8', '%.2f' % np.min(errors))  # write also error
+    for row, params in enumerate(zip(means, stdevs, bests)):
+        for column, values in zip(['B', 'C', 'D'], params):
+            worksheet.write('%s%i' % (column, (row+2)), '%.5f' % values)
+    worksheet.write('D7', '%.5f' % np.min(errors))  # write also error
+    worksheet.write('B7', '%.5f' % error_mean)
+
     # adjusting cell widths
-    worksheet.set_column(0, 15, len('D_sol_best [µm^2/s]'))
+    worksheet.set_column(0, 15, len('Standart Deviation'))
     workbook.close()
 
 
