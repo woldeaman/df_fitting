@@ -400,8 +400,10 @@ def main():
         sys.exit()
 
     results = []  # saving optimization results
+    completed_runs = 0
     for i, init in enumerate(inits):  # looping through all different start values
-        print('\nNow at run %i out of %i...\n' % (i+1, len(inits)))
+        completed_runs += 1
+        print('\nCompleted %i runs out of %i...\n' % (completed_runs, len(inits)))
         try:
             results.append(optimization(init, bnds, xx, cc, tt, dxx_dist,
                                         dxx_width, verbosity))
@@ -412,7 +414,7 @@ def main():
 
     analysis(np.array(results), xx, cc, tt, dxx_dist, dxx_width, crit_err=0.3)
 
-    return runs  # returns number of runs in order to compute average time per run
+    return completed_runs  # returns number of runs in order to compute average time per run
 
 
 if __name__ == "__main__":
