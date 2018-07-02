@@ -402,7 +402,6 @@ def main():
     results = []  # saving optimization results
     completed_runs = 0
     for i, init in enumerate(inits):  # looping through all different start values
-        completed_runs += 1
         print('\nCompleted %i runs out of %i...\n' % (completed_runs, len(inits)))
         try:
             results.append(optimization(init, bnds, xx, cc, tt, dxx_dist,
@@ -411,6 +410,7 @@ def main():
         except KeyboardInterrupt:
             print('\n\nScript has been terminated.\nData will now be analyzed...')
             break
+        completed_runs += 1
 
     analysis(np.array(results), xx, cc, tt, dxx_dist, dxx_width, crit_err=0.3)
 
