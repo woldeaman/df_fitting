@@ -390,7 +390,7 @@ def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
     ax_profiles.set(xlabel='z-distance [$\mu$m]', ylabel='Normalized concentration')
     # printing legend
     ax_profiles.legend([plt_c_zero[0], plt_c_exp[0], plt_c_theo[0]],
-                       ["c$_{exp}$ (t = 0 min)", "Experiment", "Numerical"],
+                       ["c$_{init}$ (t = 0, z)", "Experiment", "Numerical"],
                        frameon=False)
     # show also computed error
     ax_profiles.text(0.05, 0.02, '$\sigma$ = $\pm$ %.3f' % error)
