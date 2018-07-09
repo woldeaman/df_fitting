@@ -16,8 +16,9 @@ import os
 import sys
 startTime = time.time()  # start measuring run time
 
-# NOTE: setting diffusivity in solution here
-DSol = 55
+#########################################################
+DSol = 55  # NOTE: setting diffusivity in solution here #
+#########################################################
 
 
 def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_theo_mean, tt,
@@ -382,7 +383,7 @@ def optimization(init, bnds, xx, cc, tt, dxx_dist, dxx_width, verbosity=0):
 def main():
     """Set up optimization and run it."""
     # reading input and setting up analysis
-    verbosity, runs, ana, xx, cc, tt = io.startUp_slim()
+    verbosity, runs, ana, xx, cc, tt, alpha = io.startUp_slim()
     n_profiles = cc[0, :].size-1  # number of profiles without c(t=0)
 
     dxx_dist, dxx_width = discretization_Block(xx)  # get variable discretization

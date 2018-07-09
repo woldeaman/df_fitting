@@ -16,11 +16,15 @@ import os
 import sys
 startTime = time.time()  # start measuring run time
 
+##########################################################################
+d_ref = [0, 0]  # NOTE: setting diffusivity reference for regularization #
+##########################################################################
+
 
 def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_theo_mean, tt,
               errors, t_best, t_mean, best_params, avg_params, std_params, D_mean,
               D_best, F_mean, F_best, D_std, F_std, c_bulk_mean, c_bulk_std,
-              c_bulk_best, nbr_runs, crit_err, savePath, x_tot=1780):
+              c_bulk_best, nbr_runs, alpha, crit_err, savePath, x_tot=1780):
     """Make plots and save analyzed data."""
     # header for txt file in which concentration profiles will be saved
     header_cons = ''
@@ -100,6 +104,18 @@ def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_th
     worksheet.write('A5', 't_sig [µm]', bold)
     worksheet.write('A6', 'd_sig [µm]', bold)
     worksheet.write('A7', 'error', bold)
+    if alpha > 0:  # save regularization results
+        worksheet.write('A8', '||d - d_ref||', bold)
+        worksheet.write('A9', '||A*x - y||', bold)
+        # compute difference to solution, use best fit results
+        residuals_best = np.array([c_exp - c_num[6:] for c_exp, c_num in
+                                   zip(cc_scaled_best[1:], cc_theo_best[:, 1:].T)])
+        err_sol = np.sqrt(np.sum(residuals_best**2) / (cc_scaled_best[1].size *  # ||A*x - y||, only scaled to physical units
+                                                       len(cc_scaled_best[1:])))
+        # compute regularization term, use best fit results
+        err_reg = np.linalg.norm(best_params[:2] - d_ref)  # ||d - d_ref||
+        worksheet.write('D8', '%.5f' % err_reg)  # write to table
+        worksheet.write('D9', '%.5f' % err_sol)
 
     # gather original parameters
     means = [avg_params[0], avg_params[1], (avg_params[3]-avg_params[2]),
@@ -291,7 +307,7 @@ def discretization_Block(xx, x_tot=1780):
     return dxx_dist, dxx_width
 
 
-def analysis(result, xx, cc, tt, dxx_dist, dxx_width, crit_err):
+def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
     """Analyze results from optimization runs."""
     # create new folder to save results in
     savePath = os.path.join(os.getcwd(), 'results/')
@@ -325,10 +341,10 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, crit_err):
     save_data(xx, dxx_dist, cc_best, cc_mean, cc_theo_best, cc_theo_mean, tt,
               error, t_best, t_mean, best_results, averages, stdevs, D_mean,
               D_best, F_mean, F_best, D_std, F_std, c_bulk_mean, c_bulk_std,
-              c_bulk_best, result.size, crit_err, savePath)
+              c_bulk_best, result.size, alpha, crit_err, savePath)
 
 
-def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, check=False):
+def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, alpha, check=False):
     """Compute residuals for non-linear optimization."""
     # separate fit parameters accordingly
     d = parameters[:2]
@@ -355,15 +371,19 @@ def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, check=False):
     # compute residual vector and reshape into one long vector
     RR = np.array([c_exp - c_num[6:] for c_exp, c_num in zip(cc_norm, cc_theo)]).T
     RRn = RR.reshape(RR.size)  # residual vector contains all deviations
+    # tykhonov regularization, only contributes for alpha > 0
+    if alpha > 0:
+        regularization = alpha*(d - d_ref)  # regularization term
+        RRn = np.append(RRn, regularization)  # add regularization to residuals
 
     return RRn
 
 
-def optimization(init, bnds, xx, cc, tt, dxx_dist, dxx_width, verbosity=0):
+def optimization(init, bnds, xx, cc, tt, dxx_dist, dxx_width, alpha, verbosity=0):
     """Run one iteration of the non-linear optimization."""
     # reduce residual function to one argument in order to work with algorithm
     optimize = ft.partial(resFun, xx=xx, cc=cc, tt=tt, dxx_dist=dxx_dist,
-                          dxx_width=dxx_width)
+                          dxx_width=dxx_width, alpha=alpha)
 
     # running freely with standart termination conditions
     result = op.least_squares(optimize, init, bounds=bnds, verbose=verbosity)
@@ -374,7 +394,7 @@ def optimization(init, bnds, xx, cc, tt, dxx_dist, dxx_width, verbosity=0):
 def main():
     """Set up optimization and run it."""
     # reading input and setting up analysis
-    verbosity, runs, ana, xx, cc, tt = io.startUp_slim()
+    verbosity, runs, ana, xx, cc, tt, alpha = io.startUp_slim()
     n_profiles = cc[0, :].size-1  # number of profiles without c(t=0)
 
     dxx_dist, dxx_width = discretization_Block(xx)  # get variable discretization
@@ -387,7 +407,7 @@ def main():
         print('\nDoing analysis only.')
         res = np.load('result.npy')
         print('Overall %i runs have been performed.' % res.size)
-        analysis(np.array(res), xx, cc, tt, dxx_dist, dxx_width, crit_err=0.3)
+        analysis(np.array(res), xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err=0.3)
         print('\nPlots have been made and data was extraced and saved.')
         sys.exit()
 
@@ -397,14 +417,14 @@ def main():
         print('\nCompleted %i runs out of %i...\n' % (completed_runs, len(inits)))
         try:
             results.append(optimization(init, bnds, xx, cc, tt, dxx_dist,
-                                        dxx_width, verbosity))
+                                        dxx_width, alpha, verbosity))
             np.save('result.npy', np.array(results))
         except KeyboardInterrupt:
             print('\n\nScript has been terminated.\nData will now be analyzed...')
             break
         completed_runs += 1
 
-    analysis(np.array(results), xx, cc, tt, dxx_dist, dxx_width, crit_err=0.3)
+    analysis(np.array(results), xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err=0.3)
 
     return completed_runs  # returns number of runs in order to compute average time per run
 

@@ -25,9 +25,12 @@ def startUp_slim():
                         'full output')
     parser.add_argument('-ana', dest='analysis', action='store_true',
                         help='Do only plotting and analysis of previous run')
+    parser.add_argument('-alpha', dest='alpha', type=float, default=0,
+                        help='Factor for Tychonov regularization of diffusivities.')
     args = parser.parse_args()
     ana = args.analysis
     verbosity = args.verbosity
+    alpha = args.alpha
 
     # reading run parameters from stdin
     print('Set temporal resolution, supply dt in seconds:')
@@ -62,7 +65,7 @@ def startUp_slim():
         cc = np.array([data[:, int(t/dt + 1)] for t in tt]).T
 
     print('\nStarting optimization...\n')
-    return (verbosity, Runs, ana, xx, cc, tt)
+    return (verbosity, Runs, ana, xx, cc, tt, alpha)
 
 
 def startUp():
