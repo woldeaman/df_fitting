@@ -383,7 +383,7 @@ def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
     fig.text(0.65, 0.55, 'C', fontsize='xx-large', weight='extra bold')
 
     # plotting concentration profiles
-    plt_c_zero = ax_profiles.plot(xx, cc_exp[0], '-k')  # t=0 profile
+    plt_c_zero = ax_profiles.plot(xx, cc_exp[0], 'ok')  # t=0 profile
     for j, col in zip(plt_nbr, colors):  # plot rest of profiles
         plt_c_exp = ax_profiles.plot(xx_exp, cc_exp[j], '.', color=col)
         plt_c_theo = ax_profiles.plot(xx, cc_theo[:, j], '--', color=col)
