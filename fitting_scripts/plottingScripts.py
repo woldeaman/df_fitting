@@ -348,7 +348,7 @@ def plot_scalings(scalings_avg, scalings_std, c_avg_bulk, c_avg_bulk_std, tt,
     # make plot
     fig, axes = plt.subplots(1, 2, sharex=True)
     fig.text(0.005, 0.92, 'A', fontsize='xx-large', weight='extra bold')  # add subplot label
-    fig.text(0.55, 0.92, 'B', fontsize='xx-large', weight='extra bold')
+    fig.text(0.51, 0.92, 'B', fontsize='xx-large', weight='extra bold')
     # plot scaling factors first
     axes[0].errorbar(tt/60, scalings_avg, yerr=scalings_std, fmt='r-', ecolor='k')
     axes[0].set_ylabel('$f_{\\text{j}}$')
