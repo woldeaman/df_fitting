@@ -350,12 +350,10 @@ def plot_scalings(scalings_avg, scalings_std, c_avg_bulk, c_avg_bulk_std, tt,
     fig.text(0.005, 0.92, 'A', fontsize='xx-large', weight='extra bold')  # add subplot label
     fig.text(0.55, 0.92, 'B', fontsize='xx-large', weight='extra bold')
     # plot scaling factors first
-    axes[0].errorbar(tt/60, scalings_avg, yerr=scalings_std, fmt='k-')
-    axes[0].plot(tt/60, scalings_avg, fmt='r-')  # mean in red
+    axes[0].errorbar(tt/60, scalings_avg, yerr=scalings_std, fmt='r-', ecolor='k')
     axes[0].set_ylabel('$f_{\\text{j}}$')
     # plot average c_bulk
-    axes[1].errorbar(tt/60, c_avg_bulk, yerr=c_avg_bulk_std, fmt='k-')
-    axes[1].plot(tt/60, c_avg_bulk, fmt='r-')  # mean in red
+    axes[1].errorbar(tt/60, c_avg_bulk, yerr=c_avg_bulk_std, fmt='r-', ecolor='k')
     axes[1].set_ylabel('$\\overline{c_{bulk}}$')
     for ax in axes:
         ax.set_xlabel('t [min]')
