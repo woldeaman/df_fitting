@@ -23,8 +23,8 @@ d_ref = [0, 0]  # NOTE: setting diffusivity reference for regularization #
 
 def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_theo_mean,
               tt, errors, t_best, t_mean, best_params, avg_params, std_params, D_mean,
-              D_best, F_mean, F_best, D_std, F_std, c_bulk_mean, c_bulk_std, c_bulk_best,
-              scalings_mean, scalings_std, scalings_best, nbr_runs, alpha, crit_err, savePath,
+              D_best, F_mean, F_best, D_std, F_std, scalings_mean, scalings_std, scalings_best,
+              c_bulk_mean, c_bulk_std, c_bulk_best, nbr_runs, alpha, crit_err, savePath,
               x_tot=1780):
     """Make plots and save analyzed data."""
     # header for txt file in which concentration profiles will be saved
@@ -343,10 +343,10 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
     # error from gauß error propagation
     c_bulk_std = compute_c_bulk_stdev(cc, scalings_std, xx)
 
-    save_data(xx, dxx_dist, cc_best, cc_mean, cc_theo_best, cc_theo_mean, scalings_mean,
-              scalings_std, tt, error, t_best, t_mean, best_results, averages,
-              stdevs, D_mean, D_best, F_mean, F_best, D_std, F_std, c_bulk_mean,
-              c_bulk_std, c_bulk_best, result.size, alpha, crit_err, savePath)
+    save_data(xx, dxx_dist, cc_best, cc_mean, cc_theo_best, cc_theo_mean, tt,
+              error, t_best, t_mean, best_results, averages, stdevs, D_mean, D_best,
+              F_mean, F_best, D_std, F_std, scalings_mean, scalings_std, scalings_best,
+              c_bulk_mean, c_bulk_std, c_bulk_best, result.size, alpha, crit_err, savePath)
 
 
 def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, alpha, check=False):
