@@ -355,7 +355,7 @@ def plot_scalings(scalings_avg, scalings_std, c_avg_bulk, c_avg_bulk_std, tt, sa
     axes[1].errorbar(tt/60, c_avg_bulk, yerr=c_avg_bulk_std, fmt='k-')
     axes[1].set_ylabel('$\\overline{c_{bulk}}$')
     for ax in axes:
-        axes.set_xlabel('t [min]')
+        ax.set_xlabel('t [min]')
     plt.savefig(savePath+'scalings.pdf', bbox_inches='tight')
 
 

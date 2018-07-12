@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Fitting DF while also rescaling profiles to match literature DSol."""
 # use this for matplotlib on the cluster
-# import matplotlib
-# matplotlib.use('Agg')
+#import matplotlib
+#matplotlib.use('Agg')
 import numpy as np
 import time
 import inputOutput as io
@@ -92,7 +92,7 @@ def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_th
                        D_mean, F_mean-F_mean[0], D_std, F_std, error_mean, plt_profiles=10, save=True,
                        savePath=savePath, suffix='avg')
     # plotting fitted average bulk concentration
-    ps.plot_average_bulk_concentration(scalings_mean, scalings_std, c_bulk_mean, c_bulk_std, tt[1:], savePath)
+    ps.plot_scalings(scalings_mean, scalings_std, c_bulk_mean, c_bulk_std, tt[1:], savePath)
 
     # saving data to excel spreadsheet
     workbook = xl.Workbook(savePath+'results.xlsx')
