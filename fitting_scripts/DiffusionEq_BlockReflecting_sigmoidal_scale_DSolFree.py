@@ -92,7 +92,8 @@ def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_th
                        D_mean, F_mean-F_mean[0], D_std, F_std, error_mean, plt_profiles=10, save=True,
                        savePath=savePath, suffix='avg')
     # plotting fitted average bulk concentration
-    ps.plot_scalings(scalings_mean, scalings_std, c_bulk_mean, c_bulk_std, tt[1:], savePath)
+    ps.plot_scalings(scalings_mean, scalings_std, c_bulk_mean, c_bulk_std, tt[1:],
+                     save=True, savePath=savePath)
 
     # saving data to excel spreadsheet
     workbook = xl.Workbook(savePath+'results.xlsx')
