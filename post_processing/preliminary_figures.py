@@ -180,7 +180,7 @@ def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, savePath=None):
     fig.tight_layout(pad=0.5, w_pad=0.55)
 
     if save:
-        plt.savefig(savePath+'DF_fit_results.eps')
+        plt.savefig(savePath+'DF_results.eps')
     else:
         plt.show()
 

@@ -342,7 +342,8 @@ def plotBlock(xx, cc, ccRes, tt, t_sig=None, locs=[0, 2], save=False, path=None,
 
 
 @mpltex.acs_decorator  # making acs-style figures
-def plot_scalings(scalings_avg, scalings_std, c_avg_bulk, c_avg_bulk_std, tt, savePath):
+def plot_scalings(scalings_avg, scalings_std, c_avg_bulk, c_avg_bulk_std, tt,
+                  save=False, savePath=os.getcwd()):
     """Plot fitted average bulk concentration for each profile."""
     # make plot
     fig, axes = plt.subplots(1, 2, sharex=True)
@@ -350,13 +351,24 @@ def plot_scalings(scalings_avg, scalings_std, c_avg_bulk, c_avg_bulk_std, tt, sa
     fig.text(0.55, 0.92, 'B', fontsize='xx-large', weight='extra bold')
     # plot scaling factors first
     axes[0].errorbar(tt/60, scalings_avg, yerr=scalings_std, fmt='k-')
+    axes[0].plot(tt/60, scalings_avg, fmt='r-')  # mean in red
     axes[0].set_ylabel('$f_{\\text{j}}$')
     # plot average c_bulk
     axes[1].errorbar(tt/60, c_avg_bulk, yerr=c_avg_bulk_std, fmt='k-')
+    axes[1].plot(tt/60, c_avg_bulk, fmt='r-')  # mean in red
     axes[1].set_ylabel('$\\overline{c_{bulk}}$')
     for ax in axes:
         ax.set_xlabel('t [min]')
-    plt.savefig(savePath+'scalings.pdf', bbox_inches='tight')
+    # for double column figures in acs style format
+    w_double = 7  # inch size for width of double column figure for ACS journals
+    width, height = fig.get_size_inches()
+    fig.set_size_inches(w_double, height)
+    fig.tight_layout(pad=0.5, w_pad=0.55)
+
+    if save:
+        plt.savefig(savePath+'scalings.eps')
+    else:
+        plt.show()
 
 
 @mpltex.acs_decorator  # making acs-style figures
