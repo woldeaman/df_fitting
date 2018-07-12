@@ -342,14 +342,21 @@ def plotBlock(xx, cc, ccRes, tt, t_sig=None, locs=[0, 2], save=False, path=None,
 
 
 @mpltex.acs_decorator  # making acs-style figures
-def plot_average_bulk_concentration(c_avg_bulk, c_avg_bulk_std, tt, savePath):
+def plot_scalings(scalings_avg, scalings_std, c_avg_bulk, c_avg_bulk_std, tt, savePath):
     """Plot fitted average bulk concentration for each profile."""
     # make plot
-    plt.figure()
-    plt.errorbar(tt/60, c_avg_bulk, yerr=c_avg_bulk_std, fmt='k-')
-    plt.xlabel('Timepoint [min]')
-    plt.ylabel('$\\overline{c_{bulk}}$')
-    plt.savefig(savePath+'c_bulk.pdf', bbox_inches='tight')
+    fig, axes = plt.subplots(1, 2, sharex=True)
+    fig.text(0.005, 0.92, 'A', fontsize='xx-large', weight='extra bold')  # add subplot label
+    fig.text(0.55, 0.92, 'B', fontsize='xx-large', weight='extra bold')
+    # plot scaling factors first
+    axes[0].errorbar(tt/60, scalings_avg, yerr=scalings_std, fmt='k-')
+    axes[0].set_ylabel('$f_{\\text{j}}$')
+    # plot average c_bulk
+    axes[1].errorbar(tt/60, c_avg_bulk, yerr=c_avg_bulk_std, fmt='k-')
+    axes[1].set_ylabel('$\\overline{c_{bulk}}$')
+    for ax in axes:
+        axes.set_xlabel('t [min]')
+    plt.savefig(savePath+'scalings.pdf', bbox_inches='tight')
 
 
 @mpltex.acs_decorator  # making acs-style figures
