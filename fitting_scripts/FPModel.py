@@ -9,6 +9,66 @@ import numpy.linalg as la
 import sys
 
 
+def compute_c_bulk_stdev(cc_original, scalings_std, xx, x_tot=1780):
+    """Compute standart deviation for fitted average c_bulk."""
+    dx = xx[1] - xx[0]  # discretization width
+    length_bulk = x_tot - np.max(xx)  # length of bulk phase
+    # error from gauß error propagation
+    c_bulk_std = [std*(dx*np.sum(c_og))/length_bulk
+                  for std, c_og in zip(scalings_std, cc_original[1:])]
+    return c_bulk_std
+
+
+def compute_avg_c_bulk(cc_scaled, xx, dxx_width, x_tot=1780):
+    """Compute corresponding average bulk concentration from fitted scalings."""
+    dx = xx[1] - xx[0]  # discretization width
+    length_bulk = x_tot - np.max(xx)  # length of bulk phase
+    c_tot = np.sum(dxx_width*cc_scaled[0])  # total amount from c(t=0) profile
+
+    # compute total amount of concentration for profiles
+    c_amount = [dx * np.sum(c) for c in cc_scaled[1:]]
+    c_bulk_avg = [(c_tot - c_am)/length_bulk for c_am in c_amount]
+
+    return c_bulk_avg
+
+
+def build_zero_profile(cc, bins_bulk=6):
+    """Build profile at t=0 by extending measured concentration into bulk."""
+    # assuming c = const. in bulk at t = 0
+    c_const = cc[0, 0]  # extend first value through bulk
+    c0 = cc[:, 0]
+    c0 = np.concatenate((np.ones(bins_bulk)*c_const, c0))
+    cc = [c0] + [cc[:, i] for i in range(1, cc[0, :].size)]  # now with c0
+
+    return cc
+
+
+def discretization_Block(xx, x_tot=1780):
+    """Set up discretization for measured system in Block experiments."""
+    # original discretization
+    dx_og = xx[1] - xx[0]
+    dim = xx.size  # number of measured bins
+
+    # lenght of the different segments for computation
+    x_2 = np.max(xx)  # length of segment 2, gel phase
+    x_1 = x_tot - x_2  # length of segment 1, bulk phase
+
+    # defining discretization, in bulk first 4 bins with dx1, next 2 bins with dx2
+    dx2 = dx_og  # in gel
+    dx1 = (x_1-2.5*dx2)/3.5  # in bulk
+
+    # vectors for distance between bins dxx_dist and bin width dxx_width
+    dxx_width = np.concatenate((np.ones(3)*dx1, np.ones(1)*(dx1+dx2)/2,
+                                np.ones(2+dim)*dx2))  # used for concentration
+    # dxx_dist contains distance to previous bin, at first bin same dx is taken
+    dxx_dist = np.concatenate((np.ones(4)*dx1,  # used for WMatrix
+                               np.ones(2+dim+1)*dx2))
+    # dxx_dist has one element more than dxx_width because it's for WMatrix
+    # computation dx at i+1 is necccessary --> needed for last bin too
+
+    return dxx_dist, dxx_width
+
+
 # definition of rate matrix
 # with reflective BCs or one sided open BCs
 # in case of open BCs df contains d and f for leftmost bin outside domain
