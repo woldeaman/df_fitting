@@ -350,10 +350,10 @@ def plot_scalings(scalings_avg, scalings_std, c_avg_bulk, c_avg_bulk_std, tt,
     fig.text(0.005, 0.92, 'A', fontsize='xx-large', weight='extra bold')  # add subplot label
     fig.text(0.51, 0.92, 'B', fontsize='xx-large', weight='extra bold')
     # plot scaling factors first
-    axes[0].errorbar(tt/60, scalings_avg, yerr=scalings_std, fmt='r-', ecolor='k')
+    axes[0].errorbar(tt/60, scalings_avg, yerr=scalings_std, fmt='r.', ecolor='k')
     axes[0].set_ylabel('$f_{\\text{j}}$')
     # plot average c_bulk
-    axes[1].errorbar(tt/60, c_avg_bulk, yerr=c_avg_bulk_std, fmt='r-', ecolor='k')
+    axes[1].errorbar(tt/60, c_avg_bulk, yerr=c_avg_bulk_std, fmt='r.', ecolor='k')
     axes[1].set_ylabel('$\\overline{c_{bulk}}$')
     for ax in axes:
         ax.set_xlabel('t [min]')
@@ -375,12 +375,13 @@ def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
                     savePath=os.getcwd()):
     """Make nice figure for D,F profiles and concentration profiles."""
     # setting number of profiles to plot
-    c_nbr = len(cc_exp)  # number of profiles
+    c_nbr = cc_theo[0, :].size  # number of numerical profiles
     if plt_profiles is 'all' or c_nbr < plt_profiles:
         plt_nbr = np.arange(1, c_nbr)  # plot all profiles
     else:
-        skip = int(c_nbr/plt_profiles)
-        plt_nbr = np.arange(skip, c_nbr, skip)
+        # logarithmicly selecting profiles to plot, more for earlier times
+        plt_nbr = np.unique(np.logspace(0, np.log10(c_nbr-1), num=plt_profiles).astype(int))
+
     # creating x-vector for plotting experimental profiles
     diff = cc_theo[:, 1].size - cc_exp[1].size  # difference in lengths
     xx_exp = xx[diff:]  # truncated vector for plotting experimental profiles
@@ -396,21 +397,22 @@ def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
     ax_F = plt.subplot2grid((2, 3), (1, 2), sharex=ax_D)
     # subplot labels
     fig.text(0.005, 0.92, 'A', fontsize='xx-large', weight='extra bold')  # add subplot label
-    fig.text(0.65, 0.92, 'B', fontsize='xx-large', weight='extra bold')
-    fig.text(0.65, 0.55, 'C', fontsize='xx-large', weight='extra bold')
+    fig.text(0.645, 0.92, 'B', fontsize='xx-large', weight='extra bold')
+    fig.text(0.645, 0.53, 'C', fontsize='xx-large', weight='extra bold')
 
     # plotting concentration profiles
-    plt_c_zero = ax_profiles.plot(xx, cc_exp[0], '--.k')  # t=0 profile
-    for j, col in zip(plt_nbr, colors):  # plot rest of profiles
-        plt_c_exp = ax_profiles.plot(xx_exp, cc_exp[j], '.', color=col)
+    for j, col in zip(plt_nbr[::-1], colors[::-1]):  # plot rest of profiles
+        if j < len(cc_exp):  # only plot experimental data if provided
+            plt_c_exp = ax_profiles.plot(xx_exp, cc_exp[j], '.', color=col)
         plt_c_theo = ax_profiles.plot(xx, cc_theo[:, j], '--', color=col)
     ax_profiles.set(xlabel='z-distance [$\mu$m]', ylabel='Normalized concentration')
+    plt_c_zero = ax_profiles.plot(xx, cc_exp[0], '--.k')  # t=0 profile
     # printing legend
     ax_profiles.legend([plt_c_zero[0], plt_c_exp[0], plt_c_theo[0]],
                        ["c$_{init}$ (t = 0, z)", "Experiment", "Numerical"],
-                       frameon=False)
+                       frameon=False, loc='lower left')
     # show also computed error
-    ax_profiles.text(0.05, 0.02, '$\sigma$ = $\pm$ %.3f' % error)
+    ax_profiles.text(xx[-12], 0.95, '$\sigma$ = $\pm$ %.3f' % error)
     # place colorbar in inset in current axis
     fig.colorbar(scalarMap, cmap=cm.jet, norm=norm, orientation='vertical',
                  ax=ax_profiles, label='Time [min]', pad=0.0125)

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Fitting DF while also rescaling profiles to match literature DSol."""
 # use this for matplotlib on the cluster
-#import matplotlib
-#matplotlib.use('Agg')
+# import matplotlib
+# matplotlib.use('Agg')
 import numpy as np
 import time
 import inputOutput as io
@@ -22,14 +22,14 @@ d_ref = [0, 0]  # NOTE: setting diffusivity reference for regularization #
 
 
 def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_theo_mean,
-              tt, errors, t_best, t_mean, best_params, avg_params, std_params, D_mean,
+              tt_og, tt_ext, errors, t_best, t_mean, best_params, avg_params, std_params, D_mean,
               D_best, F_mean, F_best, D_std, F_std, scalings_mean, scalings_std, scalings_best,
               c_bulk_mean, c_bulk_std, c_bulk_best, nbr_runs, alpha, crit_err, savePath,
               x_tot=1780):
     """Make plots and save analyzed data."""
     # header for txt file in which concentration profiles will be saved
     header_cons = ''
-    for i, t in enumerate(tt):
+    for i, t in enumerate(tt_ext):
         header_cons += ('column%i: c-profile [micro_M] for t_%i = %i min\n'
                         % (i+2, i, int(t/60)))
     # saving numerical profiles
@@ -70,29 +70,29 @@ def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_th
                        'column1: bulk concentration\n'
                        'column2: scaling coefficients'))
 
-    # reconstruct original x-vector
-    length_bulk, dx = (x_tot - np.max(xx)), (xx[1] - xx[0])
+    # build accurate xx-vector
+    xx_lin = np.array([np.sum(dxx_dist[1:i]) for i in range(1, dxx_dist.size)])
+    xx_scale = xx_lin - xx_lin[6]  # zero is at bin 6
     # for labeling the x-axis correctly, first 4 bins at different separation
     xx_dummy = np.concatenate(([0, 6, 12, 18], np.arange(cc_theo_best[:, 0].size-4)+19))
-    xlabels = [[xx_dummy[0], xx_dummy[2]]+[x for x in xx_dummy[6::5]],
-               ["-%i" % length_bulk, "-%i" % (length_bulk-np.sum(dxx_dist[:2]))] +
-               ["%i" % (i*5*dx) for i in range(xx_dummy[6::5].size)]]
+    xlabels = [np.append(xx_dummy[:4], xx_dummy[6::5]).astype(int),
+               np.append(xx_scale[:4], xx_scale[6::5]).astype(int)]
     # plotting profiles for averaged and best parameters
-    t_best = np.round(t_best/dx) + 19 + 2  # scale transition to new x-vector
-    t_mean = np.round(t_mean/dx) + 19 + 2
+    t_best = np.round(t_best/abs(xx[1]-xx[0])) + 19 + 2  # scale transition to new x-vector
+    t_mean = np.round(t_mean/abs(xx[1]-xx[0])) + 19 + 2
     # compute error for averaged parameters
     residuals = np.array([c_exp - c_num[6:] for c_exp, c_num in zip(cc_scaled_means[1:],
                                                                     cc_theo_mean[:, 1:].T)])
     error_mean = np.sqrt(np.sum(residuals**2) / (cc_scaled_means[1].size *
                                                  len(cc_scaled_means[1:])))
-    ps.figure_combined(xx_dummy, xlabels, cc_scaled_best, cc_theo_best, tt, t_best,
+    ps.figure_combined(xx_dummy, xlabels, cc_scaled_best, cc_theo_best, tt_ext, t_best,
                        D_best, F_best-F_best[0], np.zeros(D_best.size), np.zeros(F_best.size),
-                       errors[0], plt_profiles=10, save=True, savePath=savePath, suffix='best')
-    ps.figure_combined(xx_dummy, xlabels, cc_scaled_means, cc_theo_mean, tt, t_mean,
-                       D_mean, F_mean-F_mean[0], D_std, F_std, error_mean, plt_profiles=10, save=True,
+                       errors[0], plt_profiles=15, save=True, savePath=savePath, suffix='best')
+    ps.figure_combined(xx_dummy, xlabels, cc_scaled_means, cc_theo_mean, tt_ext, t_mean,
+                       D_mean, F_mean-F_mean[0], D_std, F_std, error_mean, plt_profiles=15, save=True,
                        savePath=savePath, suffix='avg')
     # plotting fitted average bulk concentration
-    ps.plot_scalings(scalings_mean, scalings_std, c_bulk_mean, c_bulk_std, tt[1:],
+    ps.plot_scalings(scalings_mean, scalings_std, c_bulk_mean, c_bulk_std, tt_og[1:],
                      save=True, savePath=savePath)
 
     # saving data to excel spreadsheet
@@ -330,8 +330,9 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
     W_best = fp.WMatrixVar(D_best, F_best, start=4, end=None, deltaXX=dxx_dist, con=True)
     W_mean = fp.WMatrixVar(D_mean, F_mean, start=4, end=None, deltaXX=dxx_dist, con=True)
     # computing concentration profiles
-    cc_theo_best = np.array([fp.calcC(cc[0], (t-tt[0]), W=W_best) for t in tt]).T
-    cc_theo_mean = np.array([fp.calcC(cc[0], (t-tt[0]), W=W_mean) for t in tt]).T
+    tt_ext = np.append(tt[:-1], np.arange(tt[-1], tt[-1]*10))  # extend to long time limit
+    cc_theo_best = np.array([fp.calcC(cc[0], (t-tt[0]), W=W_best) for t in tt_ext]).T
+    cc_theo_mean = np.array([fp.calcC(cc[0], (t-tt[0]), W=W_mean) for t in tt_ext]).T
 
     # compute re-scaled concentration profiles
     cc_best, cc_mean = [cc[0]], [cc[0]]
@@ -344,7 +345,7 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
     # error from gauß error propagation
     c_bulk_std = compute_c_bulk_stdev(cc, scalings_std, xx)
 
-    save_data(xx, dxx_dist, cc_best, cc_mean, cc_theo_best, cc_theo_mean, tt,
+    save_data(xx, dxx_dist, cc_best, cc_mean, cc_theo_best, cc_theo_mean, tt, tt_ext,
               error, t_best, t_mean, best_results, averages, stdevs, D_mean, D_best,
               F_mean, F_best, D_std, F_std, scalings_mean, scalings_std, scalings_best,
               c_bulk_mean, c_bulk_std, c_bulk_best, result.size, alpha, crit_err, savePath)
