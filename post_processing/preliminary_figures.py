@@ -2,6 +2,7 @@
 """Analyse D and F results of fits."""
 import numpy as np
 import pandas as pd
+import fitting_scripts.FPModel as fp
 import scipy.special as sp
 import matplotlib.pyplot as plt
 import scipy.optimize as op
@@ -13,21 +14,32 @@ import sys
 #################################
 #  DEFINITIONS AND FUNCTIONS    #
 ##########################################################################
+def gather_discretizations(path):
+    """Re-compute discretizations for each setup."""
+    for g in gels:
+        for dex in dextrans[g]:
+            data = np.loadtxt(path+'/gel%i_dex%i/gel%i_dex%i.txt' % (g, dex), delimiter=',')
+            xx = data[:, 0]  # extract only x-data
+            dxx_dist
+
+
+
 def read_results(path):
     """Read fit results from analysed data."""
-    D_sol, D_gel, dF = {}, {}, {}  # storing data in dicts
+    D_sol, D_gel, dF, t_sig, d_sig = {}, {}, {}, {}, {}  # storing data in dicts
     for g in gels:
-        d_s, d_g, f = [], [], []
+        d_s, d_g, f, t_s, d_s = [], [], [], [], []
         for dex in dextrans[g]:  # cycle through all analyses
             data = pd.read_excel(path+'/gel%i_dex%i/results.xlsx' % (g, dex))
             # read and store from excel file
-            parameters = np.array([data['Averaged Results'][:3].values,
-                                   data['Standart Deviation'][:3].values])
-            for i, store in enumerate([d_s, d_g, f]):
+            parameters = np.array([data['Averaged Results'][:5].values,
+                                   data['Standart Deviation'][:5].values])
+            for i, store in enumerate([d_s, d_g, f, t_s, d_s]):
                 store.append(parameters[:, i])  # save to list first
         D_sol[g], D_gel[g], dF[g] = np.array(d_s), np.array(d_g), np.array(f)
+        t_sig[g], d_sig[g] = np.array(t_s), np.array(d_s)
 
-    return D_sol, D_gel, dF
+    return D_sol, D_gel, dF, t_sig, d_sig
 
 
 def hydrodynamic_radius(M_w, x=0.33, a=0.46):
@@ -247,8 +259,8 @@ path_to_data = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/
 ###############
 #  MAIN LOOP  #
 ##########################################################################
-# read data
-D_sol, D_gel, dF = read_results(path_to_data)
+# read fit data
+D_sol, D_gel, dF, t_sig, d_sig = read_results(path_to_data)
 # computing theoretical data
 r_h, r_pore_fit, K_theo, d_ratio_theo = fit_theory(dF)
 
