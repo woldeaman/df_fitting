@@ -14,14 +14,24 @@ import sys
 #################################
 #  DEFINITIONS AND FUNCTIONS    #
 ##########################################################################
-def gather_discretizations(path):
-    """Re-compute discretizations for each setup."""
-    for g in gels:
+def compute_amount(discretizations, c_inits, d_sols, d_gels, delta_fs, t_sigs, d_sigs):
+    """Compute integrated concentration in three different segments."""
+
+def discretizations_and_initial_profiles(path):
+    """Gather and re-compute discretizations and initial profiles for each setup."""
+    discretizations = {}
+    c_inits = {}
+    for g in gels:  # cycle through all data and read xx-vectors
+        discretizations[g], c_inits[g] = {}, {}
         for dex in dextrans[g]:
             data = np.loadtxt(path+'/gel%i_dex%i/gel%i_dex%i.txt' % (g, dex), delimiter=',')
-            xx = data[:, 0]  # extract only x-data
-            dxx_dist
+            xx, cc = data[:, 0], data[:, 1:]  # extract data
+            dxx_dist, dxx_width = fp.discretization_Block(xx)  # compute discretization
+            cc_complete = fp.build_zero_profile(cc)  # build t=0 profile
+            discretizations[g][dex] = dxx_dist  # storing discretizations
+            c_inits[g][dex] = cc_complete  # storing initial profiles
 
+    return discretizations, c_inits
 
 
 def read_results(path):
@@ -197,7 +207,7 @@ def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, savePath=None):
         plt.show()
 
 
-# @mpltex.acs_decorator  # making acs-style figures
+@mpltex.acs_decorator  # making acs-style figures
 def figure_theory(r_h, D_sol_exp, D_gel_exp, dF_exp, D_ratio_theo, K_theo,
                   save=False, savePath=None):
     """Plot comparison to fitted theory data."""
@@ -261,6 +271,9 @@ path_to_data = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/
 ##########################################################################
 # read fit data
 D_sol, D_gel, dF, t_sig, d_sig = read_results(path_to_data)
+# read discretizations for analysis
+discretizations, c_inits = discretizations_and_initial_profiles(path_to_data)
+
 # computing theoretical data
 r_h, r_pore_fit, K_theo, d_ratio_theo = fit_theory(dF)
 
