@@ -5,6 +5,7 @@ import pandas as pd
 import fitting_scripts.FPModel as fp
 import scipy.special as sp
 import matplotlib.pyplot as plt
+import matplotlib.animation as an
 import scipy.optimize as op
 import functools as ft
 import mpltex  # for acs style figures
@@ -34,7 +35,7 @@ def compute_amount(discretizations, z_vectors, c_inits, d_sols, d_gels,
             z_trans = int(np.round(t_s[0]/10) + 6)  # dz = 10 and 6 bins in bulk
             # compute numerical profiles for longer time points
             tt_long = np.logspace(-2, np.log10(t_max), 5000).astype(int)
-            cc_theo = [fp.calcC(c_inits[g][dex][0], t=t, W=W) for t in tt_long]
+            cc_theo = [fp.calcC(c_inits[g][dex], t=t, W=W) for t in tt_long]
             # now compute average concentration in different segments
             bulk = [np.average(cc[:6]) for cc in cc_theo]  # regime without experimental data
             trans = [np.average(cc[6:z_trans]) for cc in cc_theo]  # experimental data regime up to interface
@@ -58,7 +59,7 @@ def discretizations_and_initial_profiles(path):
             dxx_dist, dxx_width = fp.discretization_Block(zz)  # compute discretization
             cc_complete = fp.build_zero_profile(cc)  # build t=0 profile
             discretizations[g][dex] = dxx_dist  # storing discretizations
-            c_inits[g][dex] = cc_complete  # storing initial profiles
+            c_inits[g][dex] = cc_complete[0]  # storing initial profiles
             z_vectors[g][dex] = zz  # storing z vectors
 
     return discretizations, c_inits, z_vectors
@@ -300,12 +301,68 @@ def figure_amount_time(avg_bulk, avg_trans, avg_gel, save=False, savePath=None):
             plt.xlabel('$t$ [min]')
             plt.ylabel('$\\overline{c}$')
             fig.tight_layout(pad=0.5, w_pad=0.55)
-            plt.legend([blk[0], trn[0], gel[0]], ['bulk', 'transition', 'gel'],
+            plt.legend([blk[0], trn[0], gel[0]], ['far bulk', 'near bulk', 'gel'],
                        frameon=False)
             if save:
                 plt.savefig(savePath+'gel_%i_dex%i_penetration.eps' % (g, dex))
             else:
                 plt.show()
+
+
+@mpltex.acs_decorator  # making acs-style figures
+def make_animation(dx_dist, zz_exp, c_init, Dsol, Dgel, dF, t_sig, d_sig,
+                   t_max, name='video', savePath=None):
+    """Make video of changing concentration profiles."""
+    tt = np.arange(0, t_max)  # extended time vector
+    # z ticks and labels
+    zz_lin = np.array([np.sum(dx_dist[1:i]) for i in range(1, dx_dist.size)])
+    zz_scale = zz_lin - zz_lin[6]  # zero is at bin 6
+    # for labeling the x-axis correctly, first 4 bins at different separation
+    zz = np.concatenate(([0, 6, 12, 18], np.arange(c_init.size-4)+19))  # generate z-vector for entire system
+    zlabels = [np.append(zz[:4], zz[6::5]).astype(int),
+               np.append(zz_scale[:4], zz_scale[6::5]).astype(int)]
+    z_trans = np.round(t_sig/10 + 19 + 2)  # scale transition to new x-vector
+
+    # compute propagator for system
+    D = np.array([fp.sigmoidalDF([Dsol, Dgel], t_sig, d_sig, z) for z in zz_exp])
+    F = np.array([fp.sigmoidalDF([0, dF], t_sig, d_sig, z) for z in zz_exp])
+    segments = np.concatenate((np.zeros(6), np.arange(D.size))).astype(int)
+    D, F = fp.computeDF(D, F, shape=segments)
+    # computing WMatrix, start smaller than 6, because D, F is const. only there
+    W = fp.WMatrixVar(D, F, start=4, end=None, deltaXX=dx_dist, con=True)
+
+    # First set up the figure, the axis, and the plot element we want to animate
+    fig = plt.figure()
+    ax = plt.axes(xlim=(zz[0]-0.01*zz[-1], zz[-1]+0.01*zz[-1]), ylim=(-.05, 1.05))
+    ax.axvspan(ax.get_xlim()[0], z_trans, color=[0.875, 0.875, 1], lw=0)  # bulk = blue
+    ax.axvspan(z_trans, ax.get_xlim()[-1], color=[0.9, 0.9, 0.9], lw=0)  # gel = grey
+    ax.axvline(z_trans, ls=':', c='k')  # indicate transition
+    ax.set_xticks(zlabels[0])
+    ax.set_xticklabels(zlabels[1])
+    ax.set(ylabel='Normalized concentration', xlabel='z-distance [$\mu$m]')
+
+    line, = ax.plot([], [], 'k--.')
+    time_text = ax.text(0.65, 0.9, '', transform=ax.transAxes)
+
+    # initialization function: plot the background of each frame
+    def init():
+        line.set_data([], [])
+        time_text.set_text('')
+        return line,
+
+    # animation function.  This is called sequentially
+    def animate(i):
+        c_theo = fp.calcC(c_init, t=tt[i], W=W)
+        line.set_data(zz, c_theo)
+        time_text.set_text('Time = %.2f min' % (tt[i]/60))
+        return line,
+
+    # call the animator.  blit=True means only re-draw the parts that have changed.
+    anim = an.FuncAnimation(fig, animate, init_func=init,
+                            frames=tt.size, interval=20, blit=True)
+    fig.tight_layout(pad=0.5, w_pad=0.55)
+    # save the animation as an mp4.  This requires ffmpeg or mencoder
+    anim.save(savePath+'/%s_animation.mp4' % name, fps=60, extra_args=['-vcodec', 'libx264'])
 ##########################################################################
 
 
@@ -336,3 +393,9 @@ figure_explanation(save=True, savePath=home+'/Desktop/')
 figure_results(gels, dextrans, D_sol, D_gel, dF, save=True, savePath=home+'/Desktop/')
 figure_amount_time(avg_bulk, avg_trans, avg_gel, save=True, savePath=home+'/Desktop/')
 figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=True, savePath=home+'/Desktop/')
+
+t_max = {4: 6000, 10: 60000}  # max video time for dextrans in seconds
+for i, dex in enumerate([4, 10]):
+    make_animation(discretizations[10][dex], z_vectors[10][dex], c_inits[10][dex], D_sol[10][i, 0],
+                   D_gel[10][i, 0], dF[10][i, 0], t_sig[10][i, 0], d_sig[10][i, 0], t_max[dex],
+                   name='gel10_dex%i' % dex, savePath=home+'/Desktop/')
