@@ -14,40 +14,70 @@ import sys
 #################################
 #  DEFINITIONS AND FUNCTIONS    #
 ##########################################################################
-def compute_amount(discretizations, c_inits, d_sols, d_gels, delta_fs, t_sigs, d_sigs):
-    """Compute integrated concentration in three different segments."""
+def compute_amount(discretizations, z_vectors, c_inits, d_sols, d_gels,
+                   delta_fs, t_sigs, d_sigs, t_max=750000):
+    """Compute averaged concentration in three different segments."""
+    avg_gel, avg_trans, avg_bulk = {}, {}, {}
+    for g in gels:
+        avg_gel[g], avg_trans[g], avg_bulk[g] = {}, {}, {}
+        for dex, d_s, d_g, df, t_s, d_s in zip(dextrans[g], d_sols[g], d_gels[g],
+                                               delta_fs[g], t_sig[g], d_sig[g]):
+            D = np.array([fp.sigmoidalDF([d_s[0], d_g[0]], t_s[0], d_s[0], z)
+                          for z in z_vectors[g][dex]])
+            F = np.array([fp.sigmoidalDF([0, df[0]], t_s[0], d_s[0], z)
+                          for z in z_vectors[g][dex]])
+            segments = np.concatenate((np.zeros(6), np.arange(D.size))).astype(int)
+            D, F = fp.computeDF(D, F, shape=segments)
+            # computing WMatrix, start smaller than 6, because D, F is const. only there
+            W = fp.WMatrixVar(D, F, start=4, end=None, deltaXX=discretizations[g][dex], con=True)
+            # gather interface position in bin dimensions
+            z_trans = int(np.round(t_s[0]/10) + 6)  # dz = 10 and 6 bins in bulk
+            # compute numerical profiles for longer time points
+            tt_long = np.logspace(-2, np.log10(t_max), 5000).astype(int)
+            cc_theo = [fp.calcC(c_inits[g][dex][0], t=t, W=W) for t in tt_long]
+            # now compute average concentration in different segments
+            bulk = [np.average(cc[:6]) for cc in cc_theo]  # regime without experimental data
+            trans = [np.average(cc[6:z_trans]) for cc in cc_theo]  # experimental data regime up to interface
+            gel = [np.average(cc[z_trans:]) for cc in cc_theo]  # everything beyond interface
+            # store computed amounts with corresponding time points
+            avg_gel[g][dex] = np.c_[tt_long, gel]
+            avg_trans[g][dex] = np.c_[tt_long, trans]
+            avg_bulk[g][dex] = np.c_[tt_long, bulk]
+
+    return avg_bulk, avg_trans, avg_gel
+
 
 def discretizations_and_initial_profiles(path):
     """Gather and re-compute discretizations and initial profiles for each setup."""
-    discretizations = {}
-    c_inits = {}
+    discretizations, z_vectors, c_inits = {}, {}, {}
     for g in gels:  # cycle through all data and read xx-vectors
-        discretizations[g], c_inits[g] = {}, {}
+        discretizations[g], c_inits[g], z_vectors[g] = {}, {}, {}
         for dex in dextrans[g]:
-            data = np.loadtxt(path+'/gel%i_dex%i/gel%i_dex%i.txt' % (g, dex), delimiter=',')
-            xx, cc = data[:, 0], data[:, 1:]  # extract data
-            dxx_dist, dxx_width = fp.discretization_Block(xx)  # compute discretization
+            data = np.loadtxt(path+'/gel%i_dex%i/gel%i_dex%i.txt' % (g, dex, g, dex), delimiter=',')
+            zz, cc = data[:, 0], data[:, 1:]  # extract data
+            dxx_dist, dxx_width = fp.discretization_Block(zz)  # compute discretization
             cc_complete = fp.build_zero_profile(cc)  # build t=0 profile
             discretizations[g][dex] = dxx_dist  # storing discretizations
             c_inits[g][dex] = cc_complete  # storing initial profiles
+            z_vectors[g][dex] = zz  # storing z vectors
 
-    return discretizations, c_inits
+    return discretizations, c_inits, z_vectors
 
 
 def read_results(path):
     """Read fit results from analysed data."""
     D_sol, D_gel, dF, t_sig, d_sig = {}, {}, {}, {}, {}  # storing data in dicts
     for g in gels:
-        d_s, d_g, f, t_s, d_s = [], [], [], [], []
+        d_s, d_g, f, t_s, del_s = [], [], [], [], []
         for dex in dextrans[g]:  # cycle through all analyses
             data = pd.read_excel(path+'/gel%i_dex%i/results.xlsx' % (g, dex))
             # read and store from excel file
             parameters = np.array([data['Averaged Results'][:5].values,
                                    data['Standart Deviation'][:5].values])
-            for i, store in enumerate([d_s, d_g, f, t_s, d_s]):
+            for i, store in enumerate([d_s, d_g, f, t_s, del_s]):
                 store.append(parameters[:, i])  # save to list first
         D_sol[g], D_gel[g], dF[g] = np.array(d_s), np.array(d_g), np.array(f)
-        t_sig[g], d_sig[g] = np.array(t_s), np.array(d_s)
+        t_sig[g], d_sig[g] = np.array(t_s), np.array(del_s)
 
     return D_sol, D_gel, dF, t_sig, d_sig
 
@@ -253,6 +283,29 @@ def figure_theory(r_h, D_sol_exp, D_gel_exp, dF_exp, D_ratio_theo, K_theo,
         plt.savefig(savePath+'theory_comparison.eps')
     else:
         plt.show()
+
+
+@mpltex.acs_decorator  # making acs-style figures
+def figure_amount_time(avg_bulk, avg_trans, avg_gel, save=False, savePath=None):
+    """Make figure for temporal evolution of average concentration in different segments."""
+    for g in gels:
+        for dex in dextrans[g]:
+            fig = plt.figure()
+            plt.title("$M_{\\text{gel}}$ = %i kDa   $M_{\\text{dex}}$ = %i kDa" % (g, dex))
+            blk = plt.plot(avg_bulk[g][dex][:, 0]/60, avg_bulk[g][dex][:, 1], 'b-')
+            trn = plt.plot(avg_trans[g][dex][:, 0]/60, avg_trans[g][dex][:, 1], 'r-')
+            gel = plt.plot(avg_gel[g][dex][:, 0]/60, avg_gel[g][dex][:, 1], 'k-')
+            plt.xscale('log')
+            # labels and legends
+            plt.xlabel('$t$ [min]')
+            plt.ylabel('$\\overline{c}$')
+            fig.tight_layout(pad=0.5, w_pad=0.55)
+            plt.legend([blk[0], trn[0], gel[0]], ['bulk', 'transition', 'gel'],
+                       frameon=False)
+            if save:
+                plt.savefig(savePath+'gel_%i_dex%i_penetration.eps' % (g, dex))
+            else:
+                plt.show()
 ##########################################################################
 
 
@@ -272,12 +325,14 @@ path_to_data = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/
 # read fit data
 D_sol, D_gel, dF, t_sig, d_sig = read_results(path_to_data)
 # read discretizations for analysis
-discretizations, c_inits = discretizations_and_initial_profiles(path_to_data)
-
+discretizations, c_inits, z_vectors = discretizations_and_initial_profiles(path_to_data)
+# compute time resolved average concentration
+avg_bulk, avg_trans, avg_gel = compute_amount(discretizations, z_vectors, c_inits, D_sol, D_gel, dF, t_sig, d_sig)
 # computing theoretical data
 r_h, r_pore_fit, K_theo, d_ratio_theo = fit_theory(dF)
 
 # plot data
 figure_explanation(save=True, savePath=home+'/Desktop/')
 figure_results(gels, dextrans, D_sol, D_gel, dF, save=True, savePath=home+'/Desktop/')
-figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=False, savePath=home+'/Desktop/')
+figure_amount_time(avg_bulk, avg_trans, avg_gel, save=True, savePath=home+'/Desktop/')
+figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=True, savePath=home+'/Desktop/')
