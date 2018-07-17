@@ -193,7 +193,7 @@ def figure_explanation(save=False, savePath=None):
     fig.tight_layout(pad=0.5, w_pad=0.55)
 
     if save:
-        plt.savefig(savePath+'model_intro.eps')
+        plt.savefig(savePath+'/model_intro.eps')
     else:
         plt.show()
 
@@ -234,7 +234,7 @@ def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, savePath=None):
     fig.tight_layout(pad=0.5, w_pad=0.55)
 
     if save:
-        plt.savefig(savePath+'DF_results.eps')
+        plt.savefig(savePath+'/DF_results.eps')
     else:
         plt.show()
 
@@ -282,7 +282,7 @@ def figure_theory(r_h, D_sol_exp, D_gel_exp, dF_exp, D_ratio_theo, K_theo,
     fig.tight_layout(pad=0.5, w_pad=0.55)
 
     if save:
-        plt.savefig(savePath+'theory_comparison.eps')
+        plt.savefig(savePath+'/theory_comparison.eps')
     else:
         plt.show()
 
@@ -305,7 +305,7 @@ def figure_amount_time(avg_bulk, avg_trans, avg_gel, save=False, savePath=None):
             plt.legend([blk[0], trn[0], gel[0]], ['far bulk', 'near bulk', 'gel'],
                        frameon=False)
             if save:
-                plt.savefig(savePath+'gel_%i_dex%i_penetration.eps' % (g, dex))
+                plt.savefig(savePath+'/gel_%i_dex%i_penetration.eps' % (g, dex))
             else:
                 plt.show()
 
