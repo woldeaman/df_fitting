@@ -156,6 +156,33 @@ def fit_theory(dF):
 
 
 @mpltex.acs_decorator  # making acs-style figures
+def figure_c_init(discretization, c_init, save=False, savePath=None):
+    """Make figure for explaining building of initial profile."""
+    # z ticks and labels
+    zz_lin = np.array([np.sum(discretization[1:i]) for i in range(1, discretization.size)])
+    zz_scale = zz_lin - zz_lin[6]  # zero is at bin 6
+    # for labeling the x-axis correctly, first 4 bins at different separation
+    zz = np.concatenate(([0, 6, 12, 18], np.arange(c_init.size-4)+19))  # generate z-vector for entire system
+    zlabels = [np.append(zz[:4], zz[6::5]).astype(int),
+               np.append(zz_scale[:4], zz_scale[6::5]).astype(int)]
+
+    fig = plt.figure()  # make figure now
+    ext = plt.plot(zz[:6], c_init[:6], 'ko--', mfc='white')
+    plt.plot(zz[6:7], c_init[6:7], 'k--')
+    exp = plt.plot(zz[6:], c_init[6:], 'ok--')
+    plt.xticks(zlabels[0], zlabels[1])
+    plt.ylabel('Normalized concentration')
+    plt.xlabel('z-distance [$\mu$m]')
+    fig.tight_layout(pad=0.5, w_pad=0.55)
+    plt.legend([ext[0], exp[0]], ['extended', 'experiment'], frameon=False)
+
+    if save:
+        plt.savefig(savePath+'/c_init.eps')
+    else:
+        plt.show()
+
+
+@mpltex.acs_decorator  # making acs-style figures
 def figure_explanation(save=False, savePath=None):
     """Make figure for explaining the model."""
     # make exemplary sigmoidal shape function
@@ -392,6 +419,7 @@ r_h, r_pore_fit, K_theo, d_ratio_theo = fit_theory(dF)
 
 # plot data
 figure_explanation(save=True, savePath=save_path)
+figure_c_init(discretizations[10][10], c_inits[10][10], save=True, savePath=save_path)
 figure_results(gels, dextrans, D_sol, D_gel, dF, save=True, savePath=save_path)
 figure_amount_time(avg_bulk, avg_trans, avg_gel, save=True, savePath=save_path)
 figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=True, savePath=save_path)
