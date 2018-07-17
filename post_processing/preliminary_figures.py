@@ -218,14 +218,14 @@ def figure_explanation(save=False, savePath=None):
     axes[1].text(-0.19, 0.48, 'Diffusivity', color='r', rotation=90)
     axes[1].text(-0.2, 0.5, '/', rotation=90)
     axes[1].text(-0.19, 0.99, 'Free Energy', color='b', rotation=90)
-    axes[1].text(0.46, -0.065, '$2d_{\\text{trans}}$')
+    axes[1].text(0.46, -0.065, '$2d_{\\text{int}}$')
     axes[1].annotate('', (0.4, 0.05), (0.6, 0.05), arrowprops=dict(arrowstyle='<->'))
     axes[1].set(xlabel='z-distance')
     axes[1].set_xlim([-0.1, 1.1])
     axes[1].set_ylim([-0.1, 1.15])
     axes[1].set_yticks([])
     axes[1].set_xticks([0, 0.1, 0.5, 1])
-    axes[1].set_xticklabels(['$-z_{\\text{start}}$', 0, '$z_{\\text{trans}}$', '$z_{\\text{end}}$'])
+    axes[1].set_xticklabels(['$-z_{\\text{top}}$', 0, '$z_{\\text{int}}$', '$z_{\\text{bot}}$'])
     axes[0].remove()
 
     # for double column figures in acs style format
