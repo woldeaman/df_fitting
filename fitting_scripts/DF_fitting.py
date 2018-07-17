@@ -87,9 +87,9 @@ def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_th
                                                  len(cc_scaled_means[1:])))
     ps.figure_combined(xx_dummy, xlabels, cc_scaled_best, cc_theo_best, tt_ext, t_best,
                        D_best, F_best-F_best[0], np.zeros(D_best.size), np.zeros(F_best.size),
-                       errors[0], plt_profiles=15, save=True, savePath=savePath, suffix='best')
+                       errors[0], plt_profiles=10, save=True, savePath=savePath, suffix='best')
     ps.figure_combined(xx_dummy, xlabels, cc_scaled_means, cc_theo_mean, tt_ext, t_mean,
-                       D_mean, F_mean-F_mean[0], D_std, F_std, error_mean, plt_profiles=15, save=True,
+                       D_mean, F_mean-F_mean[0], D_std, F_std, error_mean, plt_profiles=10, save=True,
                        savePath=savePath, suffix='avg')
     # plotting fitted average bulk concentration
     ps.plot_scalings(scalings_mean, scalings_std, c_bulk_mean, c_bulk_std, tt_og[1:],
@@ -270,7 +270,7 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
     W_best = fp.WMatrixVar(D_best, F_best, start=4, end=None, deltaXX=dxx_dist, con=True)
     W_mean = fp.WMatrixVar(D_mean, F_mean, start=4, end=None, deltaXX=dxx_dist, con=True)
     # computing concentration profiles
-    tt_ext = np.append(tt[:-1], np.arange(tt[-1], tt[-1]*5))  # extend to long time limit
+    tt_ext = np.append(tt[:-1], np.arange(tt[-1], tt[-1]*7))  # extend to long time limit
     cc_theo_best = np.array([fp.calcC(cc[0], (t-tt[0]), W=W_best) for t in tt_ext]).T
     cc_theo_mean = np.array([fp.calcC(cc[0], (t-tt[0]), W=W_mean) for t in tt_ext]).T
 

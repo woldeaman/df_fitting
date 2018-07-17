@@ -385,11 +385,13 @@ def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
     # creating x-vector for plotting experimental profiles
     diff = cc_theo[:, 1].size - cc_exp[1].size  # difference in lengths
     xx_exp = xx[diff:]  # truncated vector for plotting experimental profiles
-    # setting up the colormap and color range
-    colors = [cm.jet(x) for x in np.linspace(0, 1, plt_nbr.size)]
-    norm = mpl.colors.Normalize(vmin=tt[1]/60, vmax=tt[-1]/60)
-    scalarMap = cm.ScalarMappable(norm=norm, cmap=cm.jet)
-    scalarMap.set_array(tt[1:]/60)  # mapping colors to time in minutes
+
+    # create appropriate colormap using dummy plot
+    z = [tt[plt_nbr]/60, tt[plt_nbr]/60, tt[plt_nbr]/60]  # amplitude dummy is time
+    dummy_map = plt.imshow(z, cmap='jet', norm=mpl.colors.LogNorm())
+    # linear map between [0, 1] ~ log(t) in range of [t_min, t_max], t_min > 0
+    colors = [dummy_map.cmap(np.log10(tt[j])/(np.log10(tt[-1])-np.log10(tt[1])) -
+                             np.log10(tt[1])/(np.log10(tt[-1])-np.log10(tt[1]))) for j in plt_nbr]
 
     fig = plt.figure()  # create figure
     ax_profiles = plt.subplot2grid((2, 3), (0, 0), rowspan=2, colspan=2)
@@ -401,21 +403,21 @@ def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
     fig.text(0.645, 0.53, 'C', fontsize='xx-large', weight='extra bold')
 
     # plotting concentration profiles
-    for j, col in zip(plt_nbr[::-1], colors[::-1]):  # plot rest of profiles
+    plt_c_theo, plt_c_exp = [], []
+    for j, col in zip(plt_nbr, colors):  # plot rest of profiles
         if j < len(cc_exp):  # only plot experimental data if provided
-            plt_c_exp = ax_profiles.plot(xx_exp, cc_exp[j], '.', color=col)
-        plt_c_theo = ax_profiles.plot(xx, cc_theo[:, j], '--', color=col)
+            plt_c_exp.append(ax_profiles.plot(xx_exp, cc_exp[j], '.', color=col))
+        plt_c_theo.append(ax_profiles.plot(xx, cc_theo[:, j], '--', color=col))
     ax_profiles.set(xlabel='z-distance [$\mu$m]', ylabel='Normalized concentration')
     plt_c_zero = ax_profiles.plot(xx, cc_exp[0], '--.k')  # t=0 profile
     # printing legend
-    ax_profiles.legend([plt_c_zero[0], plt_c_exp[0], plt_c_theo[0]],
+    ax_profiles.legend([plt_c_zero[0], plt_c_exp[0][0], plt_c_theo[0][0]],
                        ["c$_{init}$ (t = 0, z)", "Experiment", "Numerical"],
                        frameon=False, loc='lower left')
     # show also computed error
     ax_profiles.text(xx[-12], 0.95, '$\sigma$ = $\pm$ %.3f' % error)
-    # place colorbar in inset in current axis
-    fig.colorbar(scalarMap, cmap=cm.jet, norm=norm, orientation='vertical',
-                 ax=ax_profiles, label='Time [min]', pad=0.0125)
+    # create colorbar with correct labels
+    fig.colorbar(dummy_map, label='Time [min]', pad=0.0125, ax=ax_profiles)
 
     # plotting D and F profiles
     for ax, df, df_std, col, label in zip([ax_D, ax_F], [D, F], [D_STD, F_STD],
