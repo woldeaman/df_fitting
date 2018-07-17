@@ -10,6 +10,7 @@ import scipy.optimize as op
 import functools as ft
 import mpltex  # for acs style figures
 import sys
+import os
 
 
 #################################
@@ -369,10 +370,11 @@ def make_animation(dx_dist, zz_exp, c_init, Dsol, Dgel, dF, t_sig, d_sig,
 #################
 #  ENVIRONMENT  #
 ##########################################################################
-home = '/Users/woldeaman/'  # change home directory accordingly
 gels = [6, 10]  # molecular weight of the analyzed gels [kDa]
 dextrans = {6: [4, 10, 20], 10: [4, 10]}  # molecular weight of analyzed dextrans for the different gels
+home = '/Users/woldeaman/'  # change home directory accordingly
 path_to_data = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/ComputedData/rescaling_live/free_DSol'
+save_path = os.getcwd()  # by default save in current directory
 ##########################################################################
 
 
@@ -389,10 +391,10 @@ avg_bulk, avg_trans, avg_gel = compute_amount(discretizations, z_vectors, c_init
 r_h, r_pore_fit, K_theo, d_ratio_theo = fit_theory(dF)
 
 # plot data
-figure_explanation(save=True, savePath=home+'/Desktop/')
-figure_results(gels, dextrans, D_sol, D_gel, dF, save=True, savePath=home+'/Desktop/')
-figure_amount_time(avg_bulk, avg_trans, avg_gel, save=True, savePath=home+'/Desktop/')
-figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=True, savePath=home+'/Desktop/')
+figure_explanation(save=True, savePath=save_path)
+figure_results(gels, dextrans, D_sol, D_gel, dF, save=True, savePath=save_path)
+figure_amount_time(avg_bulk, avg_trans, avg_gel, save=True, savePath=save_path)
+figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=True, savePath=save_path)
 
 
 t_max = 12000  # max video time for dextrans in seconds
@@ -400,4 +402,4 @@ for g in gels:
     for i, dex in enumerate(dextrans[g]):
         make_animation(discretizations[g][dex], z_vectors[g][dex], c_inits[g][dex], D_sol[g][i, 0],
                        D_gel[g][i, 0], dF[g][i, 0], t_sig[g][i, 0], d_sig[g][i, 0], t_max,
-                       name='gel%i_dex%i' % (g, dex), savePath=home+'/Desktop/')
+                       name='gel%i_dex%i' % (g, dex), savePath=save_path)
