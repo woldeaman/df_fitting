@@ -16,16 +16,16 @@ import sys
 #  DEFINITIONS AND FUNCTIONS    #
 ##########################################################################
 def compute_amount(discretizations, z_vectors, c_inits, d_sols, d_gels,
-                   delta_fs, t_sigs, d_sigs, t_max=750000):
+                   delta_fs, t_sigs, d_sigs, t_max=50000):
     """Compute averaged concentration in three different segments."""
     avg_gel, avg_trans, avg_bulk = {}, {}, {}
     for g in gels:
         avg_gel[g], avg_trans[g], avg_bulk[g] = {}, {}, {}
-        for dex, d_s, d_g, df, t_s, d_s in zip(dextrans[g], d_sols[g], d_gels[g],
-                                               delta_fs[g], t_sig[g], d_sig[g]):
-            D = np.array([fp.sigmoidalDF([d_s[0], d_g[0]], t_s[0], d_s[0], z)
+        for dex, d_s, d_g, df, t_s, del_s in zip(dextrans[g], d_sols[g], d_gels[g],
+                                                 delta_fs[g], t_sig[g], d_sig[g]):
+            D = np.array([fp.sigmoidalDF([d_s[0], d_g[0]], t_s[0], del_s[0], z)
                           for z in z_vectors[g][dex]])
-            F = np.array([fp.sigmoidalDF([0, df[0]], t_s[0], d_s[0], z)
+            F = np.array([fp.sigmoidalDF([0, df[0]], t_s[0], del_s[0], z)
                           for z in z_vectors[g][dex]])
             segments = np.concatenate((np.zeros(6), np.arange(D.size))).astype(int)
             D, F = fp.computeDF(D, F, shape=segments)
@@ -394,8 +394,10 @@ figure_results(gels, dextrans, D_sol, D_gel, dF, save=True, savePath=home+'/Desk
 figure_amount_time(avg_bulk, avg_trans, avg_gel, save=True, savePath=home+'/Desktop/')
 figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=True, savePath=home+'/Desktop/')
 
-t_max = {4: 6000, 10: 60000}  # max video time for dextrans in seconds
-for i, dex in enumerate([4, 10]):
-    make_animation(discretizations[10][dex], z_vectors[10][dex], c_inits[10][dex], D_sol[10][i, 0],
-                   D_gel[10][i, 0], dF[10][i, 0], t_sig[10][i, 0], d_sig[10][i, 0], t_max[dex],
-                   name='gel10_dex%i' % dex, savePath=home+'/Desktop/')
+
+t_max = 12000  # max video time for dextrans in seconds
+for g in gels:
+    for i, dex in enumerate(dextrans[g]):
+        make_animation(discretizations[g][dex], z_vectors[g][dex], c_inits[g][dex], D_sol[g][i, 0],
+                       D_gel[g][i, 0], dF[g][i, 0], t_sig[g][i, 0], d_sig[g][i, 0], t_max,
+                       name='gel%i_dex%i' % (g, dex), savePath=home+'/Desktop/')
