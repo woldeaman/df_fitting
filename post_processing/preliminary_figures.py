@@ -198,6 +198,32 @@ def figure_c_init(discretization, c_init, save=False, savePath=None):
 
 
 @mpltex.acs_decorator  # making acs-style figures
+def figure_scalings(zz_exp, c_exp, tt, scalings, skip=5, save=False, savePath=None):
+    """Make figure comparing original experimental profiles and scaled ones."""
+    # create appropriate colormap using dummy plot
+    z = [tt/60, tt/60, tt/60]  # amplitude dummy is time
+    dummy_map = plt.imshow(z, cmap='jet')
+
+    fig = plt.figure()  # create figure with correctly colored profiles
+    colors = [dummy_map.cmap(x) for x in np.linspace(0, 1, len(c_exp))]
+    c_og, c_sc = [], []
+    for f, c, col in zip(scalings[::skip], c_exp[1::skip], colors[::skip]):
+        c_sc.append(plt.plot(zz_exp, f*c, '-', c=col))
+        c_og.append(plt.plot(zz_exp, c, ':', c=col))
+    # labels and legends
+    plt.xlabel('z-distance [$\mu$m]')
+    plt.ylabel('Normalized concentration')
+    fig.tight_layout(pad=0.5, w_pad=0.55)
+    plt.legend([c_og[0][0], c_sc[0][0]], ['original', 'scaled'], frameon=False)
+    fig.colorbar(dummy_map, label='Time [min]', pad=0.0125)
+
+    if save:
+        plt.savefig(savePath+'/scaling_comparison.eps')
+    else:
+        plt.show()
+
+
+@mpltex.acs_decorator  # making acs-style figures
 def figure_explanation(save=False, savePath=None):
     """Make figure for explaining the model."""
     # make exemplary sigmoidal shape function
@@ -440,6 +466,7 @@ r_h, r_pore_fit, K_theo, d_ratio_theo = fit_theory(dF)
 # plot data
 figure_explanation(save=True, savePath=save_path)
 figure_c_init(discretizations[10][10], c_exps[10][10][0], save=True, savePath=save_path)
+figure_scalings(z_vectors[10][10], c_exps[10][10], np.arange(0, 1000, 10), scalings[10][10], save=True, savePath=save_path)
 figure_results(gels, dextrans, D_sol, D_gel, dF, save=True, savePath=save_path)
 figure_amount_time(avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp, avg_trans_exp, save=True, savePath=save_path)
 figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=True, savePath=save_path)
