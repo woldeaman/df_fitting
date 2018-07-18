@@ -3,8 +3,8 @@
 % first flip to have bulk on left side
 flipped = transpose(fliplr(transpose(int(:, :))));
 
-% then cut off glass, adjust cut-off bin
-cut_off = 31;
+% then cut off glass, adjust cut-off bin here
+cut_off = 50;
 cut = flipped(1:cut_off, :);
 
 % create x-vector

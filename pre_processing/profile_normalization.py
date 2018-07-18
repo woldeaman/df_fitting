@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-import scipy.interpolate as ip
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
