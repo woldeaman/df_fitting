@@ -387,7 +387,7 @@ def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
     xx_exp = xx[diff:]  # truncated vector for plotting experimental profiles
 
     # create appropriate colormap using dummy plot
-    z = [tt[plt_nbr]/60, tt[plt_nbr]/60, tt[plt_nbr]/60]  # amplitude dummy is time
+    z = [tt/60, tt/60, tt/60]  # amplitude dummy is time
     dummy_map = plt.imshow(z, cmap='jet', norm=mpl.colors.LogNorm())
     # linear map between [0, 1] ~ log(t) in range of [t_min, t_max], t_min > 0
     colors = [dummy_map.cmap(np.log10(tt[j])/(np.log10(tt[-1])-np.log10(tt[1])) -
@@ -409,13 +409,14 @@ def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
             plt_c_exp.append(ax_profiles.plot(xx_exp, cc_exp[j], '.', color=col))
         plt_c_theo.append(ax_profiles.plot(xx, cc_theo[:, j], '--', color=col))
     ax_profiles.set(xlabel='z-distance [$\mu$m]', ylabel='Normalized concentration')
-    plt_c_zero = ax_profiles.plot(xx, cc_exp[0], '--.k')  # t=0 profile
+    plt_c_zero = ax_profiles.plot(xx, cc_exp[0], '-k')  # t=0 profile
     # printing legend
     ax_profiles.legend([plt_c_zero[0], plt_c_exp[0][0], plt_c_theo[0][0]],
                        ["c$_{init}$ (t = 0, z)", "Experiment", "Numerical"],
                        frameon=False, loc='lower left')
     # show also computed error
-    ax_profiles.text(xx[-12], 0.95, '$\sigma$ = $\pm$ %.3f' % error)
+    ax_profiles.text(0.8, 0.9, '$\sigma$ = $\pm$ %.3f' % error,
+                     transform=ax_profiles.transAxes)
     # create colorbar with correct labels
     fig.colorbar(dummy_map, label='Time [min]', pad=0.0125, ax=ax_profiles)
 

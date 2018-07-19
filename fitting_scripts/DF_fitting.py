@@ -75,8 +75,8 @@ def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_th
     xx_scale = xx_lin - xx_lin[6]  # zero is at bin 6
     # for labeling the x-axis correctly, first 4 bins at different separation
     xx_dummy = np.concatenate(([0, 6, 12, 18], np.arange(cc_theo_best[:, 0].size-4)+19))
-    xlabels = [np.append(xx_dummy[:4], xx_dummy[6::5]).astype(int),
-               np.append(xx_scale[:4], xx_scale[6::5]).astype(int)]
+    xlabels = [np.append(xx_dummy[:3], xx_dummy[6::5]).astype(int),
+               np.append(xx_scale[:3], xx_scale[6::5]).astype(int)]
     # plotting profiles for averaged and best parameters
     t_best = np.round(t_best/abs(xx[1]-xx[0])) + 19 + 2  # scale transition to new x-vector
     t_mean = np.round(t_mean/abs(xx[1]-xx[0])) + 19 + 2
@@ -87,9 +87,9 @@ def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_th
                                                  len(cc_scaled_means[1:])))
     ps.figure_combined(xx_dummy, xlabels, cc_scaled_best, cc_theo_best, tt_ext, t_best,
                        D_best, F_best-F_best[0], np.zeros(D_best.size), np.zeros(F_best.size),
-                       errors[0], plt_profiles=10, save=True, savePath=savePath, suffix='best')
+                       errors[0], plt_profiles=12, save=True, savePath=savePath, suffix='best')
     ps.figure_combined(xx_dummy, xlabels, cc_scaled_means, cc_theo_mean, tt_ext, t_mean,
-                       D_mean, F_mean-F_mean[0], D_std, F_std, error_mean, plt_profiles=10, save=True,
+                       D_mean, F_mean-F_mean[0], D_std, F_std, error_mean, plt_profiles=12, save=True,
                        savePath=savePath, suffix='avg')
     # plotting fitted average bulk concentration
     ps.plot_scalings(scalings_mean, scalings_std, c_bulk_mean, c_bulk_std, tt_og[1:],
