@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Fitting DF while also rescaling profiles"""
+"""Fitting DF without rescaling profiles"""
 # use this for matplotlib on the cluster
 # import matplotlib
 # matplotlib.use('Agg')
