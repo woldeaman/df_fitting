@@ -37,7 +37,7 @@ for it=0:t_max
 
     % NOTE: this is a baseline correction,
     % intensity in glass should be zero, substract any non zero contributions
-   int_tmp=int_tmp-mean(int_tmp(1:7));
+   % int_tmp=int_tmp-mean(int_tmp(1:7));
    % pp=polyfit((length(int_tmp)-12:length(int_tmp)),int_tmp(end-12:end)',1);
    % int_tmp=int_tmp./polyval(pp,(1:length(int_tmp)))';
    % NOTE: this is the normalization,

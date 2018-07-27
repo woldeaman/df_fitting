@@ -1,13 +1,19 @@
 % pre processing of profiles, flip and cut glass off
 
-name = 'gel6_dex70_forts'  % supply name for profiles
+name = 'gel6_dex70'  % supply name for profiles
 % first flip to have bulk on left side
 flipped = transpose(fliplr(transpose(int(:, :))));
 
 % then cut off glass, adjust cut-off bin here
-cut_off = 40;
+cut_off = 44;
 cut = flipped(1:cut_off, :);
+% find maximal value and only store profiles up to this point, as systematic decline of concentration in bulk was observed
+[max_value, idx] = max(cut(:));
+[idx_row, idx_col] = ind2sub(size(cut), idx);
+fprintf('Cutoff is %i:\n', idx_row)
+cut = cut(idx_row:end, :);  % truncate profiles after maximum
 cut = cut./cut(1);  % set concentration to one at leftmost bin in the beginning
+
 
 % create x-vector
 dx = 10;
@@ -19,7 +25,7 @@ plot(xx, cut, 'o');
 % save to new matrix
 processed = [];
 processed(:, 1) = xx;
-processed(:, 2:length(cut)+1) = cut;
+processed(:, 2:length(cut(1, :))+1) = cut;
 
 % save to file
 dlmwrite(strcat('/Users/woldeaman/Desktop/', name, '.txt'), processed, 'delimiter', ',');
