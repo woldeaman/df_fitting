@@ -3,17 +3,17 @@
 # use this for matplotlib on the cluster
 # import matplotlib
 # matplotlib.use('Agg')
+import sys
+import os
 import numpy as np
-import time
-import inputOutput as io
-import FPModel as fp
 import functools as ft
+import time
+import xlsxwriter as xl
+import fitting_scripts.inputOutput as io
+import fitting_scripts.FPModel as fp
+import fitting_scripts.plottingScripts as ps
 import scipy.optimize as op
 import scipy.special as sp
-import plottingScripts as ps
-import xlsxwriter as xl
-import os
-import sys
 startTime = time.time()  # start measuring run time
 
 ##########################################################################
