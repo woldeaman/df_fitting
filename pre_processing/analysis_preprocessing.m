@@ -5,13 +5,11 @@ name = 'gel6_dex70'  % supply name for profiles
 flipped = transpose(fliplr(transpose(int(:, :))));
 
 % then cut off glass, adjust cut-off bin here
+start_off = 1;
 cut_off = 44;
 cut = flipped(1:cut_off, :);
 % find maximal value and only store profiles up to this point, as systematic decline of concentration in bulk was observed
-[max_value, idx] = max(cut(:));
-[idx_row, idx_col] = ind2sub(size(cut), idx);
-fprintf('Cutoff is %i:\n', idx_row)
-cut = cut(idx_row:end, :);  % truncate profiles after maximum
+cut = cut(start_off:end, :);  % truncate profiles after maximum
 cut = cut./cut(1);  % set concentration to one at leftmost bin in the beginning
 
 
