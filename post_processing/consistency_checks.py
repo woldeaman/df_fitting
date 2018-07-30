@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib as mpl
+import pandas as pd
 import mpltex  # for acs style figures
 
 
@@ -14,13 +15,13 @@ import mpltex  # for acs style figures
 def plot_profiles(xx, cc, tt, save=False, savePath=os.getcwd()):
     """Plot randomized profiles."""
     fig = plt.figure()
-    colors = [cm.jet(x) for x in np.linspace(0, 1, len(cc))]
+    colors = [cm.jet(x) for x in np.linspace(0, 1, cc[0, :].size)]
     norm = mpl.colors.Normalize(vmin=tt[1]/60, vmax=tt[-1]/60)
     scalarMap = cm.ScalarMappable(norm=norm, cmap=cm.jet)
     scalarMap.set_array(tt[1:]/60)  # mapping colors to time in minutes
 
     for c, col in zip(cc.T, colors):  # plot rest of profiles
-        plt.plot(xx, c, '-', color=col)
+        plt.plot(xx, c, '.', color=col)
     plt.xlabel('z-distance [$\mu$m]')
     plt.ylabel('Normalized concentration')
     # place colorbar in inset in current axis
@@ -35,18 +36,26 @@ def plot_profiles(xx, cc, tt, save=False, savePath=os.getcwd()):
 
 
 @mpltex.acs_decorator  # making acs-style figures
-def plot_residuals(xx, residuals, tt, save=False, savePath=os.getcwd()):
+def plot_residuals(xx, residuals, tt, t_sig, save=False, savePath=os.getcwd()):
     fig = plt.figure()
     colors = [cm.jet(x) for x in np.linspace(0, 1, len(residuals))]
     norm = mpl.colors.Normalize(vmin=tt[1]/60, vmax=tt[-1]/60)
     scalarMap = cm.ScalarMappable(norm=norm, cmap=cm.jet)
     scalarMap.set_array(tt[1:]/60)  # mapping colors to time in minutes
+    # compute error in bulk and in gel for comparison
+    x_t = np.round(t_sig/10).astype(int)
+    err_blk = np.sqrt(np.sum([res[:x_t]**2 for res in residuals])/(len(residuals)*len(xx[:x_t])))
+    err_gel = np.sqrt(np.sum([res[x_t:]**2 for res in residuals])/(len(residuals)*len(xx[x_t:])))
 
     for res, col in zip(residuals, colors):  # plot residuals
         plt.plot(xx, res, 'o', color=col)
-    plt.axhline(0, c='k', ls=':')
+    plt.axhline(0, c='k', ls='--')
+    plt.axvline(xx[x_t], c='k', ls=':')
     plt.xlabel('z-distance [$\mu$m]')
     plt.ylabel('Residuals')
+    plt.gca().text(0.63, 0.02, "$\sigma_{\\text{gel}}$ = $\pm$%i$\cdot$10$^{-3}$" % (err_gel*1000), transform=plt.gca().transAxes)
+    plt.gca().text(0.05, 0.02, "$\sigma_{\\text{sol}}$ = $\pm$%i$\cdot$10$^{-3}$" % (err_blk*1000), transform=plt.gca().transAxes)
+
     # place colorbar in inset in current axis
     fig.colorbar(scalarMap, cmap=cm.jet, norm=norm, orientation='vertical',
                  ax=plt.gca(), label='Time [min]', pad=0.0125)
@@ -62,15 +71,16 @@ def plot_residuals(xx, residuals, tt, save=False, savePath=os.getcwd()):
 #  MAIN LOOP    #
 ##########################################################################
 # plotting profiles
-path_p = ''  # path to experimental profiles
+path_p = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/5.Batch/ExperimentalData/gel6_dex20.txt'  # path to experimental profiles
 data = np.loadtxt(path_p, delimiter=',')  # read profile data
-xx, cc_exp, tt = data[:, 0], data[:, 1:], np.arange(0, data[:, 1:].size, 10)
+xx, cc_exp, tt = data[:, 0], data[:, 1:], np.arange(0, 10*data[0, 1:].size, 10)
 plot_profiles(xx, cc_exp, tt, save=True, savePath='/Users/woldeaman/Desktop/')
 # plotting residuals
-path_res = ''  # path to fit results
+path_res = '/Users/woldeaman/Desktop/Cluster/jobs/fokkerPlanckModel/PEG_dextran/5.Batch/with_scaling/gel6_dex20/results'  # path to fit results
+t_sig = pd.read_excel(path_res+'/results.xlsx')['Averaged Results'].values[3]
 scalings = np.loadtxt(path_res+'/scalings_best.txt', delimiter=',')[:, 1]
 cc_scaled = [f*c for f, c in zip(scalings, cc_exp.T)]  # compute scaled experimental data
 cc_theo = np.loadtxt(path_res+'/cc_theo_best.txt', delimiter=',')
 residuals = [c_e - c_t[6:] for c_e, c_t in zip(cc_scaled[1:], cc_theo[:, 1:].T)]
-plot_residuals(xx, residuals, tt, save=True, savePath='/Users/woldeaman/Desktop/')
+plot_residuals(xx, residuals, tt, t_sig, save=True, savePath='/Users/woldeaman/Desktop/')
 ##########################################################################
