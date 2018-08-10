@@ -46,6 +46,8 @@ def plot_residuals(xx, residuals, tt, t_sig, save=False, savePath=os.getcwd()):
     x_t = np.round(t_sig/10).astype(int)
     err_blk = np.sqrt(np.sum([res[:x_t]**2 for res in residuals])/(len(residuals)*len(xx[:x_t])))
     err_gel = np.sqrt(np.sum([res[x_t:]**2 for res in residuals])/(len(residuals)*len(xx[x_t:])))
+    err_gel_txt = "$\sigma_{\\text{gel}}$ = $\pm$%i$\cdot$10$^{-3}$" % (err_gel*1000)
+    err_blk_txt = "$\sigma_{\\text{sol}}$ = $\pm$%i$\cdot$10$^{-3}$" % (err_blk*1000)
 
     for res, col in zip(residuals, colors):  # plot residuals
         plt.plot(xx, res, 'o', color=col)
@@ -53,9 +55,14 @@ def plot_residuals(xx, residuals, tt, t_sig, save=False, savePath=os.getcwd()):
     plt.axvline(xx[x_t], c='k', ls=':')
     plt.xlabel('z-distance [$\mu$m]')
     plt.ylabel('Residuals')
-    plt.gca().text(0.63, 0.02, "$\sigma_{\\text{gel}}$ = $\pm$%i$\cdot$10$^{-3}$" % (err_gel*1000), transform=plt.gca().transAxes)
-    plt.gca().text(0.05, 0.02, "$\sigma_{\\text{sol}}$ = $\pm$%i$\cdot$10$^{-3}$" % (err_blk*1000), transform=plt.gca().transAxes)
-
+    plt.gca().annotate(err_blk_txt, xy=(t_sig/2, 0), xycoords='data', xytext=(0.2, -0.25),
+                       textcoords='axes fraction', bbox=dict(boxstyle="round", fc='none'),
+                       arrowprops=dict(arrowstyle="-", color="k", connectionstyle="arc3,rad=0.3"),
+                       horizontalalignment='right', verticalalignment='bottom')
+    plt.gca().annotate(err_gel_txt, xy=(t_sig+(xx[-1]-t_sig)/2, 0), xycoords='data', xytext=(1.25, -0.25),
+                       textcoords='axes fraction', bbox=dict(boxstyle="round", fc='none'),
+                       arrowprops=dict(arrowstyle="-", color="k", connectionstyle="arc3,rad=-0.3"),
+                       horizontalalignment='right', verticalalignment='bottom')
     # place colorbar in inset in current axis
     fig.colorbar(scalarMap, cmap=cm.jet, norm=norm, orientation='vertical',
                  ax=plt.gca(), label='Time [min]', pad=0.0125)
@@ -71,12 +78,12 @@ def plot_residuals(xx, residuals, tt, t_sig, save=False, savePath=os.getcwd()):
 #  MAIN LOOP    #
 ##########################################################################
 # plotting profiles
-path_p = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/5.Batch/ExperimentalData/gel6_dex20.txt'  # path to experimental profiles
+path_p = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/5.Batch/ExperimentalData/gel10_dex20.txt'  # path to experimental profiles
 data = np.loadtxt(path_p, delimiter=',')  # read profile data
 xx, cc_exp, tt = data[:, 0], data[:, 1:], np.arange(0, 10*data[0, 1:].size, 10)
 plot_profiles(xx, cc_exp, tt, save=True, savePath='/Users/woldeaman/Desktop/')
 # plotting residuals
-path_res = '/Users/woldeaman/Desktop/Cluster/jobs/fokkerPlanckModel/PEG_dextran/5.Batch/with_scaling/gel6_dex20/results'  # path to fit results
+path_res = '/Users/woldeaman/Desktop/Cluster/jobs/fokkerPlanckModel/PEG_dextran/5.Batch/with_scaling/gel10_dex20/results'  # path to fit results
 t_sig = pd.read_excel(path_res+'/results.xlsx')['Averaged Results'].values[3]
 scalings = np.loadtxt(path_res+'/scalings_best.txt', delimiter=',')[:, 1]
 cc_scaled = [f*c for f, c in zip(scalings, cc_exp.T)]  # compute scaled experimental data
