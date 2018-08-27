@@ -157,16 +157,16 @@ def average_data(result, xx, cc, crit_err):
     combis = n_profiles-1  # number of combinations for different c-profiles
 
     # loading error values, factor two, because of cost function definition
-    key_list = np.array(list(result.root.v_children.keys()))  # key list to easily iterate over
+    key_list = np.array(list(result.root._v_children.keys()))  # key list to easily iterate over
     error = np.array([np.sqrt(2*result[key]['cost'].values[0] / (bins*combis)) for key in key_list])
     # now determine results to include for averaging, based on distance to minimal error
     err_lim = np.min(error) + np.min(error)*crit_err  # limit in error to include for averaging
     indices = error < err_lim  # index mask for results to include
 
     # gathering mean for all parameters
-    averages = np.mean([result[key+'/x'].values()[:, 0] for key in key_list[indices]], axis=0)
-    stdevs = np.std([result[key+'/x'].values()[:, 0] for key in key_list[indices]], axis=0)
-    best_results = result[key_list[np.argmin(error)]+'/x'].values()[:, 0]
+    averages = np.mean([result[key+'/x'].values[:, 0] for key in key_list[indices]], axis=0)
+    stdevs = np.std([result[key+'/x'].values[:, 0] for key in key_list[indices]], axis=0)
+    best_results = result[key_list[np.argmin(error)]+'/x'].values[:, 0]
 
     # splitting up parameters to compute D, F profiles
     D_mean, F_mean, t_mean, d_mean = averages[:2], averages[2:4], averages[4], averages[5]
@@ -270,11 +270,11 @@ def append_result(iteration, results, idx):
     array_less = pd.DataFrame({key: iteration[key]
                                for key, val in is_array.items()
                                if not val}, index=[0])
-    results.append('%i' % idx, array_less)
+    results.append('r%i' % idx, array_less)
     # append arrays as sub-node
     for key, val in is_array.items():
         if val:
-            results.append('%i/%s' % (idx, key), pd.DataFrame(iteration[key]))
+            results.append('r%i/%s' % (idx, key), pd.DataFrame(iteration[key]))
 
 
 def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
@@ -384,15 +384,15 @@ def main():
 
     completed_runs = 1
     for i, init in enumerate(inits):  # looping through all different start values
-        with pd.HDFStore('results.h5') as results:
+        with pd.HDFStore('results.h5', complevel=9) as results:
             try:
                 res = optimization(init, bnds, xx, cc, tt, dxx_dist, dxx_width, alpha, verbosity)
                 append_result(res, results, completed_runs)  # append to .hdf storage file
                 print('\nCompleted %i runs out of %i...\n' % (completed_runs, len(inits)))
+                completed_runs += 1
             except KeyboardInterrupt:
                 print('\n\nScript has been terminated.\nData will now be analyzed...')
                 break
-                completed_runs += 1
 
     results = pd.HDFStore('results.h5', mode='r')  # read storage again, now no write
     analysis(results, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err=0.3)
