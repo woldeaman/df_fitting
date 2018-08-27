@@ -12,7 +12,7 @@ import mpltex  # for acs style figures
 #  DEFINITIONS AND FUNCTIONS    #
 ##########################################################################
 @mpltex.acs_decorator  # making acs-style figures
-def plot_profiles(xx, cc, tt, save=False, savePath=os.getcwd()):
+def plot_profiles(xx, cc, tt, save=False, savePath=os.getcwd(), name='profiles'):
     """Plot randomized profiles."""
     fig = plt.figure()
     colors = [cm.jet(x) for x in np.linspace(0, 1, cc[0, :].size)]
@@ -30,7 +30,7 @@ def plot_profiles(xx, cc, tt, save=False, savePath=os.getcwd()):
 
     fig.tight_layout(pad=0.5, w_pad=0.55)
     if save:
-        plt.savefig(savePath+'profiles.eps')
+        plt.savefig(savePath+'%s.eps' % name)
     else:
         plt.show()
 
@@ -78,12 +78,13 @@ def plot_residuals(xx, residuals, tt, t_sig, save=False, savePath=os.getcwd()):
 #  MAIN LOOP    #
 ##########################################################################
 # plotting profiles
-path_p = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/5.Batch/ExperimentalData/gel10_dex20.txt'  # path to experimental profiles
+path_p = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/5.Batch/ExperimentalData/lin_fit/gel6_dex20_lin_fit.txt'  # path to experimental profiles
 data = np.loadtxt(path_p, delimiter=',')  # read profile data
-xx, cc_exp, tt = data[:, 0], data[:, 1:], np.arange(0, 10*data[0, 1:].size, 10)
-plot_profiles(xx, cc_exp, tt, save=True, savePath='/Users/woldeaman/Desktop/')
+dt = 10  # intervall between recorded stacks
+xx, cc_exp, tt = data[:, 0], data[:, 1:], np.arange(0, dt*data[0, 1:].size, dt)
+plot_profiles(xx, cc_exp, tt, save=True, savePath='/Users/woldeaman/Desktop/', name='dex4_solution')
 # plotting residuals
-path_res = '/Users/woldeaman/Desktop/Cluster/jobs/fokkerPlanckModel/PEG_dextran/5.Batch/with_scaling/gel10_dex20/results'  # path to fit results
+path_res = '/Users/woldeaman/Desktop/Data/jobs/FokkerPlanckModelling/Block_Data/5.Batch/lin_fit_bulk/gel6_dex20/results'  # path to fit results
 t_sig = pd.read_excel(path_res+'/results.xlsx')['Averaged Results'].values[3]
 scalings = np.loadtxt(path_res+'/scalings_best.txt', delimiter=',')[:, 1]
 cc_scaled = [f*c for f, c in zip(scalings, cc_exp.T)]  # compute scaled experimental data
