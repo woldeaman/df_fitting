@@ -9,6 +9,7 @@ import numpy as np
 import functools as ft
 import time
 import xlsxwriter as xl
+import pandas as pd
 import fitting_scripts.inputOutput as io
 import fitting_scripts.FPModel as fp
 import fitting_scripts.plottingScripts as ps
@@ -156,15 +157,16 @@ def average_data(result, xx, cc, crit_err):
     combis = n_profiles-1  # number of combinations for different c-profiles
 
     # loading error values, factor two, because of cost function definition
-    error = np.array([np.sqrt(2*res.cost / (bins*combis)) for res in result])
-    #  now determine results to include for averaging, based on distance to minimal error
+    key_list = np.array(list(result.root.v_children.keys()))  # key list to easily iterate over
+    error = np.array([np.sqrt(2*result[key]['cost'].values[0] / (bins*combis)) for key in key_list])
+    # now determine results to include for averaging, based on distance to minimal error
     err_lim = np.min(error) + np.min(error)*crit_err  # limit in error to include for averaging
     indices = error < err_lim  # index mask for results to include
 
     # gathering mean for all parameters
-    averages = np.mean([res.x for res in result[indices]], axis=0)
-    stdevs = np.std([res.x for res in result[indices]], axis=0)
-    best_results = result[np.argmin(error)].x
+    averages = np.mean([result[key+'/x'].values()[:, 0] for key in key_list[indices]], axis=0)
+    stdevs = np.std([result[key+'/x'].values()[:, 0] for key in key_list[indices]], axis=0)
+    best_results = result[key_list[np.argmin(error)]+'/x'].values()[:, 0]
 
     # splitting up parameters to compute D, F profiles
     D_mean, F_mean, t_mean, d_mean = averages[:2], averages[2:4], averages[4], averages[5]
@@ -253,6 +255,28 @@ def initialize_optimization(runs, params, n_profiles, xx, DMax=1000, FMax=20):
     return bnds, inits
 
 
+def append_result(iteration, results, idx):
+    """
+    Append current iteration to .hdf storage.
+
+    iteration  -  current 'OptimizeResult' object
+    results    -  .h5 storage
+    idx        -  index of current iteration for storage
+    """
+    # first separate arrays from rest of data for storage
+    is_array = {key: (True if type(val) is np.ndarray else False)
+                for key, val in iteration.items()}
+    # append data frame containing array-less data
+    array_less = pd.DataFrame({key: iteration[key]
+                               for key, val in is_array.items()
+                               if not val}, index=[0])
+    results.append('%i' % idx, array_less)
+    # append arrays as sub-node
+    for key, val in is_array.items():
+        if val:
+            results.append('%i/%s' % (idx, key), pd.DataFrame(iteration[key]))
+
+
 def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
     """Analyze results from optimization runs."""
     # create new folder to save results in
@@ -288,7 +312,7 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
     save_data(xx, dxx_dist, cc_best, cc_mean, cc_theo_best, cc_theo_mean, tt, tt_ext,
               error, t_best, t_mean, best_results, averages, stdevs, D_mean, D_best,
               F_mean, F_best, D_std, F_std, scalings_mean, scalings_std, scalings_best,
-              c_bulk_mean, c_bulk_std, c_bulk_best, result.size, alpha, crit_err, savePath)
+              c_bulk_mean, c_bulk_std, c_bulk_best, result.root._v_nchildren, alpha, crit_err, savePath)
 
 
 def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, alpha, check=False):
@@ -352,26 +376,26 @@ def main():
 
     if ana:  # make only analysis
         print('\nDoing analysis only.')
-        res = np.load('result.npy')
-        print('Overall %i runs have been performed.' % res.size)
-        analysis(np.array(res), xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err=0.3)
+        res = pd.HDFStore('results.h5', mode='r')
+        print('Overall %i runs have been performed.' % res.root._v_nchildren)
+        analysis(res, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err=0.3)
         print('\nPlots have been made and data was extraced and saved.')
         sys.exit()
 
-    results = []  # saving optimization results
-    completed_runs = 0
+    completed_runs = 1
     for i, init in enumerate(inits):  # looping through all different start values
-        print('\nCompleted %i runs out of %i...\n' % (completed_runs, len(inits)))
-        try:
-            results.append(optimization(init, bnds, xx, cc, tt, dxx_dist,
-                                        dxx_width, alpha, verbosity))
-            np.save('result.npy', np.array(results))
-        except KeyboardInterrupt:
-            print('\n\nScript has been terminated.\nData will now be analyzed...')
-            break
-        completed_runs += 1
+        with pd.HDFStore('results.h5') as results:
+            try:
+                res = optimization(init, bnds, xx, cc, tt, dxx_dist, dxx_width, alpha, verbosity)
+                append_result(res, results, completed_runs)  # append to .hdf storage file
+                print('\nCompleted %i runs out of %i...\n' % (completed_runs, len(inits)))
+            except KeyboardInterrupt:
+                print('\n\nScript has been terminated.\nData will now be analyzed...')
+                break
+                completed_runs += 1
 
-    analysis(np.array(results), xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err=0.3)
+    results = pd.HDFStore('results.h5', mode='r')  # read storage again, now no write
+    analysis(results, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err=0.3)
 
     return completed_runs  # returns number of runs in order to compute average time per run
 
