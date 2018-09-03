@@ -17,8 +17,10 @@ import os
 #  DEFINITIONS AND FUNCTIONS    #
 ##########################################################################
 def compute_amount(discretizations, z_vectors, c_exps, scalings, d_sols, d_gels,
-                   delta_fs, t_sigs, d_sigs, t_max=50000):
+                   delta_fs, t_sigs, d_sigs, t_max=50000, dt=None):
     """Compute averaged concentration in three different segments."""
+    if dt is None:  # standart dt = 10 s
+        dt = {g: {d: 10 for d in dextrans[g]} for g in gels}
     avg_gel_theo, avg_trans_theo, avg_bulk_theo = {}, {}, {}
     avg_gel_exp, avg_trans_exp, avg_bulk_exp = {}, {}, {}
     for g in gels:
@@ -48,7 +50,7 @@ def compute_amount(discretizations, z_vectors, c_exps, scalings, d_sols, d_gels,
             avg_trans_theo[g][dex] = np.c_[tt_long, trans]
             avg_bulk_theo[g][dex] = np.c_[tt_long, bulk]
             # compute and store also experimental data
-            tt_exp = np.arange(0, len(c_exps[g][dex])*10, 10)  # dt = 10s
+            tt_exp = np.arange(0, len(c_exps[g][dex])*dt[g][dex], dt[g][dex])
             trn_exp = [np.average(c_exps[g][dex][0][6:(z_trans+6)])]
             trn_exp += [np.average(f*cc[:z_trans]) for cc, f in zip(c_exps[g][dex][1:], scalings[g][dex])]
             gel_exp = [np.average(c_exps[g][dex][0][(z_trans+6):])]
@@ -444,9 +446,14 @@ def make_animation(dx_dist, zz_exp, c_init, Dsol, Dgel, dF, t_sig, d_sig,
 #  ENVIRONMENT  #
 ##########################################################################
 gels = [6, 10]  # molecular weight of the analyzed gels [kDa]
-dextrans = {6: [4, 10, 20], 10: [4, 10]}  # molecular weight of analyzed dextrans for the different gels
+# previous batch
+# dextrans = {6: [4, 10, 20], 10: [4, 10]}  # molecular weight of analyzed dextrans for the different gels
+dextrans = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed dextrans for the different gels
+dt = {g: {4: 10, 20: 10, 70: 30} for g in gels}  # new time discretization
 home = '/Users/woldeaman/'  # change home directory accordingly
-path_to_data = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/ComputedData/rescaling_live/free_DSol'
+# previous batch
+# path_to_data = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/ComputedData/rescaling_live/free_DSol'
+path_to_data = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/'
 save_path = os.getcwd()  # by default save in current directory
 ##########################################################################
 
@@ -459,14 +466,20 @@ D_sol, D_gel, dF, t_sig, d_sig, scalings = read_results(path_to_data)
 # read discretizations for analysis
 discretizations, c_exps, z_vectors = discretizations_and_initial_profiles(path_to_data)
 # compute time resolved average concentration
-avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp, avg_trans_exp = compute_amount(discretizations, z_vectors, c_exps, scalings, D_sol, D_gel, dF, t_sig, d_sig)
+(avg_bulk_theo, avg_trans_theo,
+ avg_gel_theo, avg_gel_exp, avg_trans_exp) = compute_amount(discretizations, z_vectors, c_exps, scalings,
+                                                            D_sol, D_gel, dF, t_sig, d_sig, dt=dt)
 # computing theoretical data
 r_h, r_pore_fit, K_theo, d_ratio_theo = fit_theory(dF)
 
 # plot data
 figure_explanation(save=True, savePath=save_path)
-figure_c_init(discretizations[10][10], c_exps[10][10][0], save=True, savePath=save_path)
-figure_scalings(z_vectors[10][10], c_exps[10][10], np.arange(0, 1000, 10), scalings[10][10], save=True, savePath=save_path)
+# example = [10, 10]  # previous batch
+example = [10, 20]
+example_dt = 10
+figure_c_init(discretizations[example[0]][example[1]], c_exps[example[0]][example[1]][0], save=True, savePath=save_path)
+figure_scalings(z_vectors[example[0]][example[1]], c_exps[example[0]][example[1]],
+                np.arange(0, 1000, example_dt), scalings[example[0]][example[1]], save=True, savePath=save_path)
 figure_results(gels, dextrans, D_sol, D_gel, dF, save=True, savePath=save_path)
 figure_amount_time(avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp, avg_trans_exp, save=True, savePath=save_path)
 figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=True, savePath=save_path)

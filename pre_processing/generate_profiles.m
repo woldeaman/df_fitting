@@ -1,10 +1,10 @@
 % exemplary script showing pre-processing steps of microscopy data
 clear;
 
-data_path='/Users/woldeaman/Downloads/180724-ah202-g6-d20/'; % supply path to data
-filename='180724-ah202.lif_180724-ah202-g6-d20';  % supply filenames here
+data_path='/Users/woldeaman/Downloads/180821-ah206_180821-ah206-lsg d4/'; % supply path to data
+filename='180821-ah206_180821-ah206-lsg d4';  % supply filenames here
 z_max=44;  % number of recorde z-stacks
-t_max=113;  % number of recorded time points
+t_max=9;  % number of recorded time points
 
 int=[];
 
@@ -40,7 +40,7 @@ for it=0:t_max
     % intensity in glass should be zero, substract any non zero contributions
    % int_tmp=int_tmp-mean(int_tmp(1:7));
    % NOTE: this is the linear fit to the bulk declining intensity, to remove it
-   % bins_to_fit = 12;  % how many bins in bulk solution
+   % bins_to_fit = 20;  % how many bins in bulk solution
    % pp=polyfit((length(int_tmp)-bins_to_fit:length(int_tmp)),int_tmp(end-bins_to_fit:end)',1);
    % int_tmp=int_tmp./polyval(pp,(1:length(int_tmp)))';
    % NOTE: this is the normalization,
