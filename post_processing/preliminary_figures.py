@@ -284,8 +284,14 @@ def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, savePath=None):
                              fmt=col+gel_styles[g], mfc=mfcs)
     axes[0].set(xlabel='$M_{\\text{dex}}$ [kDa]', ylabel='$D$ [$\mu$m$^2$/s]')
     # dummy plots for legends
-    dSol, dGel = plt.plot([None], '%so-' % diff_cols[0]), plt.plot([None], '%so-' % diff_cols[1])
-    axes[0].legend([dSol[0], dGel[0]], ['$D_{\\text{sol}}$', '$D_{\\text{gel}}$'])
+    D_plts = {g: [plt.plot([None], '%s%s' % (g_style, d_style), mfc=d_style) if g == gels[0] else
+                  plt.plot([None], '%s%s' % (g_style, d_style), mfc='white') for d_style in diff_cols]
+              for g, g_style in gel_styles.items()}
+    leg2 = axes[0].legend([d[0] for d in D_plts[6]], ['$D_{\\text{sol}}$', '$D_{\\text{gel}}$'],
+                          title='\\underline{$M_{\\text{gel}} = 6$ kDa}', frameon=False, loc='upper center')
+    axes[0].legend([d[0] for d in D_plts[10]], ['$D_{\\text{sol}}$', '$D_{\\text{gel}}$'],
+                   title='\\underline{$M_{\\text{gel}} = 10$ kDa}', frameon=False, loc='upper right')
+    axes[0].add_artist(leg2)
 
     # now plot free energies
     for g, mfcs in zip(gels, ['b', 'white']):
@@ -295,7 +301,8 @@ def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, savePath=None):
     axes[1].set(xlabel='$M_{\\text{dex}}$ [kDa]', ylabel='$\Delta F$ [$k_{\\text{B}}T$]')
     # dummy plots for legends
     gel6, gel10 = plt.plot([None], 'b%s' % gel_styles[6]), plt.plot([None], 'b%s' % gel_styles[10], mfc='white')
-    axes[1].legend([gel6[0], gel10[0]], ['$M_{\\text{gel}} = 6$ kDa', '$M_{\\text{gel}} = 10$ kDa'])
+    axes[1].legend([gel6[0], gel10[0]], ['$M_{\\text{gel}} = 6$ kDa', '$M_{\\text{gel}} = 10$ kDa'],
+                   frameon=False, loc='upper center')
 
     # for double column figures in acs style format
     w_double = 7  # inch size for width of double column figure for ACS journals
