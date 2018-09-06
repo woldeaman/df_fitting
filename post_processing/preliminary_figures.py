@@ -486,7 +486,7 @@ example = [10, 20]
 example_dt = 10
 figure_c_init(discretizations[example[0]][example[1]], c_exps[example[0]][example[1]][0], save=True, savePath=save_path)
 figure_scalings(z_vectors[example[0]][example[1]], c_exps[example[0]][example[1]],
-                np.arange(0, 1000, example_dt), scalings[example[0]][example[1]], save=True, savePath=save_path)
+                np.arange(0, len(c_exps[example[0]][example[1]])*example_dt, example_dt), scalings[example[0]][example[1]], save=True, savePath=save_path)
 figure_results(gels, dextrans, D_sol, D_gel, dF, save=True, savePath=save_path)
 figure_amount_time(avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp, avg_trans_exp, save=True, savePath=save_path)
 figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=True, savePath=save_path)
