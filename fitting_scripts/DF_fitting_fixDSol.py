@@ -17,9 +17,9 @@ import scipy.optimize as op
 import scipy.special as sp
 startTime = time.time()  # start measuring run time
 
-#####################################################################
-d_ref = 0  # NOTE: setting diffusivity reference for regularization #
-#####################################################################
+######################################
+d_sol = 100  # NOTE: setting DSol here #
+######################################
 
 
 def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_theo_mean,
@@ -111,18 +111,6 @@ def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_th
     worksheet.write('A5', 't_sig [µm]', bold)
     worksheet.write('A6', 'd_sig [µm]', bold)
     worksheet.write('A7', 'error', bold)
-    if alpha > 0:  # save regularization results
-        worksheet.write('A8', '||d - d_ref||', bold)
-        worksheet.write('A9', '||A*x - y||', bold)
-        # compute difference to solution, use best fit results
-        residuals_best = np.array([c_exp - c_num[6:] for c_exp, c_num in
-                                   zip(cc_scaled_best[1:], cc_theo_best[:, 1:].T)])
-        err_sol = np.sqrt(np.sum(residuals_best**2) / (cc_scaled_best[1].size *  # ||A*x - y||, only scaled to physical units
-                                                       len(cc_scaled_best[1:])))
-        # compute regularization term, use best fit results
-        err_reg = np.linalg.norm(best_params[0] - d_ref)  # ||d - d_ref||
-        worksheet.write('D8', '%.5f' % err_reg)  # write to table
-        worksheet.write('D9', '%.5f' % err_sol)
 
     # gather original parameters
     means = [avg_params[0], avg_params[1], (avg_params[3]-avg_params[2]),
@@ -167,6 +155,11 @@ def average_data(result, xx, cc, crit_err):
     averages = np.mean([result[key+'/x'].values[:, 0] for key in key_list[indices]], axis=0)
     stdevs = np.std([result[key+'/x'].values[:, 0] for key in key_list[indices]], axis=0)
     best_results = result[key_list[np.argmin(error)]+'/x'].values[:, 0]
+
+    # inserting here values for constant DSol
+    averages = np.insert(averages, 0, d_sol)
+    stdevs = np.insert(stdevs, 0, 0)
+    best_results = np.insert(best_results, 0, d_sol)
 
     # splitting up parameters to compute D, F profiles
     D_mean, F_mean, t_mean, d_mean = averages[:2], averages[2:4], averages[4], averages[5]
@@ -232,9 +225,9 @@ def initialize_optimization(runs, params, n_profiles, xx, DMax=1000, FMax=20):
     dx = xx[1] - xx[0]
 
     # set D, F bounds
-    bnds_d_up = np.ones(params)*DMax
+    bnds_d_up = np.ones(1)*DMax
     bnds_f_up = np.ones(params)*FMax
-    bnds_d_low = np.zeros(params)
+    bnds_d_low = np.zeros(1)
     bnds_f_low = np.ones(params)*(-FMax)
     # bounds for interface position and layer thickness zero and max x position
     bnds_td_up = np.ones(2)*np.max(xx)
@@ -244,7 +237,7 @@ def initialize_optimization(runs, params, n_profiles, xx, DMax=1000, FMax=20):
     bnds_scale_low = np.zeros(n_profiles)
     # setting start values
     f_init = np.zeros(params)
-    d_init = (np.random.rand(runs, params)*DMax)  # randomly choose D
+    d_init = (np.random.rand(runs, 1)*DMax)  # randomly choose D
     td_init = np.array([50, dx*3])  # order is [t, d], set t initially to 50 µm
     scale_init = np.ones(n_profiles)  # initially no scaling
     # storing everything together
@@ -318,10 +311,10 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
 def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, alpha, check=False):
     """Compute residuals for non-linear optimization."""
     # separate fit parameters accordingly
-    d = parameters[:2]
-    f = parameters[2:4]
-    t_sig, d_sig = parameters[4], parameters[5]
-    scalings = parameters[6:]
+    d = np.array([d_sol, parameters[0]])  # fix DSol here
+    f = parameters[1:3]
+    t_sig, d_sig = parameters[3], parameters[4]
+    scalings = parameters[5:]
 
     # compute sigmoidal D, F profiles
     D = np.array([fp.sigmoidalDF(d, t_sig, d_sig, x) for x in xx])
@@ -342,10 +335,6 @@ def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, alpha, check=False):
     # compute residual vector and reshape into one long vector
     RR = np.array([c_exp - c_num[6:] for c_exp, c_num in zip(cc_norm, cc_theo)]).T
     RRn = RR.reshape(RR.size)  # residual vector contains all deviations
-    # tykhonov regularization, only contributes for alpha > 0
-    if alpha > 0:
-        regularization = alpha*(d[0] - d_ref)  # regularization term
-        RRn = np.append(RRn, regularization)  # add regularization to residuals
 
     return RRn
 
