@@ -19,7 +19,7 @@ startTime = time.time()  # start measuring run time
 
 ########################################
 d_sol = 100  # NOTE: setting DSol here #
-# TODO: also fix t_sig, d_sig !!!      #
+t_s, d_s = 150, 10  # fixing t/d_sig   #
 ########################################
 
 
@@ -157,10 +157,16 @@ def average_data(result, xx, cc, crit_err):
     stdevs = np.std([result[key+'/x'].values[:, 0] for key in key_list[indices]], axis=0)
     best_results = result[key_list[np.argmin(error)]+'/x'].values[:, 0]
 
-    # inserting here values for constant DSol
+    # inserting here values for constant DSol, t_sig, d_sig
     averages = np.insert(averages, 0, d_sol)
+    averages = np.insert(averages, 4, t_s)
+    averages = np.insert(averages, 5, d_s)
     stdevs = np.insert(stdevs, 0, 0)
+    stdevs = np.insert(stdevs, 4, 0)
+    stdevs = np.insert(stdevs, 5, 0)
     best_results = np.insert(best_results, 0, d_sol)
+    best_results = np.insert(best_results, 4, t_s)
+    best_results = np.insert(best_results, 5, d_s)
 
     # splitting up parameters to compute D, F profiles
     D_mean, F_mean, t_mean, d_mean = averages[:2], averages[2:4], averages[4], averages[5]
@@ -222,29 +228,22 @@ def cross_checking(W, cc, tt, dxx_width, dxx_dist):
 
 def initialize_optimization(runs, params, n_profiles, xx, DMax=1000, FMax=20):
     """Set up bounds and start values for non-linear fit."""
-    # gather discretization
-    dx = xx[1] - xx[0]
-
     # set D, F bounds
     bnds_d_up = np.ones(1)*DMax
     bnds_f_up = np.ones(params)*FMax
     bnds_d_low = np.zeros(1)
     bnds_f_low = np.ones(params)*(-FMax)
-    # bounds for interface position and layer thickness zero and max x position
-    bnds_td_up = np.ones(2)*np.max(xx)
-    bnds_td_low = np.zeros(2)
     # bounds for scaling factors for each profile
     bnds_scale_up = np.ones(n_profiles)*100  # setting this beetwen 0-100
     bnds_scale_low = np.zeros(n_profiles)
     # setting start values
     f_init = np.zeros(params)
     d_init = (np.random.rand(runs, 1)*DMax)  # randomly choose D
-    td_init = np.array([50, dx*3])  # order is [t, d], set t initially to 50 µm
     scale_init = np.ones(n_profiles)  # initially no scaling
     # storing everything together
-    bnds = (np.concatenate((bnds_d_low, bnds_f_low, bnds_td_low, bnds_scale_low)),
-            np.concatenate((bnds_d_up, bnds_f_up, bnds_td_up, bnds_scale_up)))
-    inits = [np.concatenate((d, f_init, td_init, scale_init)) for d in d_init]
+    bnds = (np.concatenate((bnds_d_low, bnds_f_low, bnds_scale_low)),
+            np.concatenate((bnds_d_up, bnds_f_up, bnds_scale_up)))
+    inits = [np.concatenate((d, f_init, scale_init)) for d in d_init]
 
     return bnds, inits
 
@@ -314,8 +313,8 @@ def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, alpha, check=False):
     # separate fit parameters accordingly
     d = np.array([d_sol, parameters[0]])  # fix DSol here
     f = parameters[1:3]
-    t_sig, d_sig = parameters[3], parameters[4]
-    scalings = parameters[5:]
+    t_sig, d_sig = t_s, d_s
+    scalings = parameters[3:]
 
     # compute sigmoidal D, F profiles
     D = np.array([fp.sigmoidalDF(d, t_sig, d_sig, x) for x in xx])
