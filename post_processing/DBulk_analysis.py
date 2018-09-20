@@ -6,7 +6,6 @@ import mpltex  # for acs style figures
 
 # change home directory accordingly
 home = '/Users/woldeaman/'
-home = '/Users/AmanuelWK/'
 
 
 # script estimates experimental error and compares it to error for different
@@ -19,19 +18,21 @@ def figure_diffusivities(d_sol, d_gel, f_gel, error, name='params_dsol',
                          title='', save=False, scale='lin', opti=None):
     """Plot parameters change with d_sol."""
     fig, axes = plt.subplots(3, 1, sharex='col')
-    axes[0].plot(d_sol, error, 'ko')
+    axes[0].plot(d_sol, error, 'k--o')
     if opti is not None:
-        axes[0].axvline(opti, c='k', ls=':')
+        optimum = axes[0].axvline(opti, c='k', ls=':')
     axes[0].set(ylabel="Minimal error $\sigma$", title=title)  # add title if prefered
-    axes[1].plot(d_sol, d_gel, 'ro')
+    axes[1].plot(d_sol, d_gel, 'r--o')
     if opti is not None:
         axes[1].axvline(opti, ls=':', c='r')
     axes[1].set(ylabel="D$_{gel}$ [$\mu$m$^2$/s]")
-    axes[2].plot(d_sol, f_gel, 'bo')
+    axes[2].plot(d_sol, f_gel, 'b--o')
     if opti is not None:
         axes[2].axvline(opti, ls=':', c='b')
     axes[2].set(xlabel="D$_{bulk}$ [$\mu$m$^2$/s]",
                 ylabel="$\Delta$F$_{gel}$ [k$_B$T]")
+    # legend
+    axes[0].legend([optimum], ['optimum'])
     if scale is 'log':
         for ax in axes:  # setting log scale
             ax.set(yscale='log')
@@ -45,14 +46,14 @@ def figure_diffusivities(d_sol, d_gel, f_gel, error, name='params_dsol',
         plt.show()
 
 
-def read_data(path, diffusivities):
+def read_data(path, diffusivities, sub_folder=''):
     """Read data from simulations."""
     # cycle through all simulations
     D_sol, D_gel, F_gel, Error = {}, {}, {}, {}
     for set in setups:
         D_sol[set], D_gel[set], F_gel[set], Error[set] = [], [], [], []
         for d in diffusivities[set]:
-            subpath = '%s/DSol_%s/results/' % (set, d)
+            subpath = '%s/DSol_%s/%s' % (set, d, sub_folder)
             err_raw = np.loadtxt(path+subpath+'minError.txt', delimiter=',')
             df_raw = np.loadtxt(path+subpath+'DF_best.txt', delimiter=',')
             min_err = np.min(err_raw)  # gather minimal error
@@ -64,6 +65,13 @@ def read_data(path, diffusivities):
             F_gel[set].append(f_gel)
             Error[set].append(min_err)
 
+        # convert to sorted arrays
+        order = np.argsort(D_sol[set])
+        D_sol[set] = np.array(D_sol[set])[order]
+        D_gel[set] = np.array(D_gel[set])[order]
+        F_gel[set] = np.array(F_gel[set])[order]
+        Error[set] = np.array(Error[set])[order]
+
     return D_sol, D_gel, F_gel, Error
 ##########################################################################
 
@@ -71,12 +79,11 @@ def read_data(path, diffusivities):
 ################################
 #    SETTING UP ENVIRONMENT    #
 ##########################################################################
-setups = ['gel10_dex10', 'gel10_dex4', 'gel6_dex10', 'gel6_dex20', 'gel6_dex4']
-DSols_theo = [55, 101.4, 55, 39.5, 101.4]  # literature value for DSol for different dextrans
-d_range = [d for d in range(100, 1001, 100)]  # simulated DSol values
-diffusivities = {set: [1]+[d for d in range(100, 1001, 100)]+[d_theo]
+setups = ['gel6_dex4']
+DSols_theo = [333.86]  # fitted value for DSol for different dextrans
+diffusivities = {set: [1, 10, 50]+[d for d in range(100, 1000, 100)]+[d_theo]
                  for set, d_theo in zip(setups, DSols_theo)}
-path_d_data = home+"/Desktop/Cluster/FokkerPlanckModelling/Block_Data/4.Batch/rescaling_live/fix_Dsol/"
+path_d_data = home+"/Desktop/Cluster/jobs/fokkerPlanckModel/PEG_dextran/6.Batch_DSol_analysis/"
 ##########################################################################
 
 
@@ -84,7 +91,7 @@ path_d_data = home+"/Desktop/Cluster/FokkerPlanckModelling/Block_Data/4.Batch/re
 #             MAIN LOOP         #
 ##########################################################################
 # read errors for different d values
-D_sol, D_gel, F_gel, Error = read_data(path_d_data, diffusivities)
+D_sol, D_gel, F_gel, Error = read_data(path_d_data, diffusivities, sub_folder='gel6_dex4/results/')
 
 
 for i, set in enumerate(setups):
