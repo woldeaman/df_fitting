@@ -17,9 +17,10 @@ import scipy.optimize as op
 import scipy.special as sp
 startTime = time.time()  # start measuring run time
 
-######################################
+########################################
 d_sol = 100  # NOTE: setting DSol here #
-######################################
+# TODO: also fix t_sig, d_sig !!!      #
+########################################
 
 
 def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_theo_mean,
