@@ -79,8 +79,8 @@ def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_th
     xlabels = [np.append(xx_dummy[:3], xx_dummy[6::5]).astype(int),
                np.append(xx_scale[:3], xx_scale[6::5]).astype(int)]
     # plotting profiles for averaged and best parameters
-    t_best = np.round(t_best/abs(xx[1]-xx[0])) + 19 + 2  # scale transition to new x-vector
-    t_mean = np.round(t_mean/abs(xx[1]-xx[0])) + 19 + 2
+    t_best = t_best/abs(xx[1]-xx[0]) + 19 + 2  # scale transition to new x-vector
+    t_mean = t_mean/abs(xx[1]-xx[0]) + 19 + 2
     # compute error for averaged parameters
     residuals = np.array([c_exp - c_num[6:] for c_exp, c_num in zip(cc_scaled_means[1:],
                                                                     cc_theo_mean[:, 1:].T)])
@@ -388,7 +388,7 @@ def main():
             try:
                 res = optimization(init, bnds, xx, cc, tt, dxx_dist, dxx_width, alpha, verbosity)
                 append_result(res, results, completed_runs)  # append to .hdf storage file
-                print('\nCompleted %i runs out of %i...\n' % (completed_runs, len(inits)))
+                print('\nCompleted %i runs out of %i...\n' % (completed_runs+1, len(inits)))
                 completed_runs += 1
             except KeyboardInterrupt:
                 print('\n\nScript has been terminated.\nData will now be analyzed...')
