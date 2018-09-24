@@ -10,7 +10,6 @@ import scipy.optimize as op
 import functools as ft
 import mpltex  # for acs style figures
 import sys
-import os
 
 
 #################################
@@ -269,7 +268,9 @@ def figure_explanation(save=False, savePath=None):
 
 
 @mpltex.acs_decorator  # making acs-style figures
-def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, savePath=None):
+def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, scale='linear',
+                   savePath=None, locs_dLegend=['upper center', 'upper right'],
+                   name='DF_results'):
     """Plot results in nice figure."""
     gel_styles = {6: '-o', 10: 's--'}  # plotting styles for different gels
     diff_cols = ['m', 'r']  # colors for D_sol, D_gel
@@ -288,10 +289,11 @@ def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, savePath=None):
                   plt.plot([None], '%s%s' % (g_style, d_style), mfc='white') for d_style in diff_cols]
               for g, g_style in gel_styles.items()}
     leg2 = axes[0].legend([d[0] for d in D_plts[6]], ['$D_{\\text{sol}}$', '$D_{\\text{gel}}$'],
-                          title='\\underline{$M_{\\text{gel}} = 6$ kDa}', frameon=False, loc='upper center')
+                          title='\\underline{$M_{\\text{gel}} = 6$ kDa}', frameon=False, loc=locs_dLegend[0])
     axes[0].legend([d[0] for d in D_plts[10]], ['$D_{\\text{sol}}$', '$D_{\\text{gel}}$'],
-                   title='\\underline{$M_{\\text{gel}} = 10$ kDa}', frameon=False, loc='upper right')
+                   title='\\underline{$M_{\\text{gel}} = 10$ kDa}', frameon=False, loc=locs_dLegend[1])
     axes[0].add_artist(leg2)
+    axes[0].set_yscale(scale)
 
     # now plot free energies
     for g, mfcs in zip(gels, ['b', 'white']):
@@ -302,7 +304,8 @@ def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, savePath=None):
     # dummy plots for legends
     gel6, gel10 = plt.plot([None], 'b%s' % gel_styles[6]), plt.plot([None], 'b%s' % gel_styles[10], mfc='white')
     axes[1].legend([gel6[0], gel10[0]], ['$M_{\\text{gel}} = 6$ kDa', '$M_{\\text{gel}} = 10$ kDa'],
-                   frameon=False, loc='upper center')
+                   frameon=False)
+    axes[1].set_yscale(scale)
 
     # for double column figures in acs style format
     w_double = 7  # inch size for width of double column figure for ACS journals
@@ -311,7 +314,7 @@ def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, savePath=None):
     fig.tight_layout(pad=0.5, w_pad=0.55)
 
     if save:
-        plt.savefig(savePath+'/DF_results.eps')
+        plt.savefig(savePath+'/%s.eps' % name)
     else:
         plt.show()
 
@@ -458,10 +461,8 @@ gels = [6, 10]  # molecular weight of the analyzed gels [kDa]
 dextrans = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed dextrans for the different gels
 dt = {g: {4: 10, 20: 10, 70: 30} for g in gels}  # new time discretization
 home = '/Users/woldeaman/'  # change home directory accordingly
-# previous batch
-# path_to_data = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/ComputedData/rescaling_live/free_DSol'
 path_to_data = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/'
-save_path = os.getcwd()  # by default save in current directory
+save_path = home+'/Desktop'  # by default save on Desktop
 ##########################################################################
 
 
@@ -488,6 +489,9 @@ figure_c_init(discretizations[example[0]][example[1]], c_exps[example[0]][exampl
 figure_scalings(z_vectors[example[0]][example[1]], c_exps[example[0]][example[1]],
                 np.arange(0, len(c_exps[example[0]][example[1]])*example_dt, example_dt), scalings[example[0]][example[1]], save=True, savePath=save_path)
 figure_results(gels, dextrans, D_sol, D_gel, dF, save=True, savePath=save_path)
+# log plot figure
+figure_results(gels, dextrans, D_sol, D_gel, dF, save=True, savePath=save_path, scale='log',
+               locs_dLegend=['upper right', 'lower left'], name='DF_results_log')
 figure_amount_time(avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp, avg_trans_exp, save=True, savePath=save_path)
 figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=True, savePath=save_path)
 
