@@ -18,19 +18,30 @@ def figure_diffusivities(d_sol, d_gel, f_gel, error, name='params_dsol',
                          title='', save=False, scale='lin', opti=None):
     """Plot parameters change with d_sol."""
     fig, axes = plt.subplots(3, 1, sharex='col')
-    axes[0].plot(d_sol, error, 'k--o')
-    if opti is not None:
+    axes[0].plot(d_sol, error, 'k--.')
+    if opti is not None:  # plot error
         optimum = axes[0].axvline(opti, c='k', ls=':')
     axes[0].set(ylabel="Minimal error $\sigma$", title=title)  # add title if prefered
-    axes[1].plot(d_sol, d_gel, 'r--o')
+    min_err = error[np.argmin(abs(d_sol-opti))]  # minimal error
+    axes[0].axhline(min_err, ls=":", c='k')  # indicate optimal error value
+    axes[0].set_ylim([min_err-0.25*min_err, 2*min_err])
+
+    # plot D_gel
+    axes[1].plot(d_sol, d_gel, 'r--.')
     if opti is not None:
         axes[1].axvline(opti, ls=':', c='r')
-    axes[1].set(ylabel="D$_{gel}$ [$\mu$m$^2$/s]")
-    axes[2].plot(d_sol, f_gel, 'b--o')
+    axes[1].set(ylabel="$D_{\\text{gel}}$ [$\mu$m$^2$/s]")
+    best_dgel = d_gel[np.argmin(abs(d_sol-opti))]  # best solution for D_Gel
+    axes[1].axhline(best_dgel, ls=":", c='r')  # indicate optimal value
+
+    # plot free energy
+    axes[2].plot(d_sol, f_gel, 'b--.')
     if opti is not None:
         axes[2].axvline(opti, ls=':', c='b')
-    axes[2].set(xlabel="D$_{bulk}$ [$\mu$m$^2$/s]",
-                ylabel="$\Delta$F$_{gel}$ [k$_B$T]")
+    axes[2].set(xlabel="$D_{\\text{sol}}$ [$\mu$m$^2$/s]",
+                ylabel="$F_{\\text{gel}}$ [$k_{\\text{B}}T$]")
+    best_f = f_gel[np.argmin(abs(d_sol-opti))]  # best solution for dF
+    axes[2].axhline(best_f, ls=":", c='b')  # indicate optimal value
     # legend
     axes[0].legend([optimum], ['optimum'])
     if scale is 'log':
@@ -92,7 +103,6 @@ path_d_data = home+"/Desktop/Cluster/jobs/fokkerPlanckModel/PEG_dextran/6.Batch_
 ##########################################################################
 # read errors for different d values
 D_sol, D_gel, F_gel, Error = read_data(path_d_data, diffusivities, sub_folder='gel6_dex4/results/')
-
 
 for i, set in enumerate(setups):
     figure_diffusivities(D_sol[set], D_gel[set], F_gel[set], Error[set],
