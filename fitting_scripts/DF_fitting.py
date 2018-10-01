@@ -22,7 +22,7 @@ d_ref = 0  # NOTE: setting diffusivity reference for regularization #
 #####################################################################
 
 
-def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_theo_mean,
+def save_data(xx, dxx_width, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_theo_mean,
               tt_og, tt_ext, errors, t_best, t_mean, best_params, avg_params, std_params, D_mean,
               D_best, F_mean, F_best, D_std, F_std, scalings_mean, scalings_std, scalings_best,
               c_bulk_mean, c_bulk_std, c_bulk_best, nbr_runs, alpha, crit_err, savePath,
@@ -72,8 +72,8 @@ def save_data(xx, dxx_dist, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_th
                        'column2: scaling coefficients'))
 
     # build accurate xx-vector
-    xx_lin = np.array([np.sum(dxx_dist[1:i]) for i in range(1, dxx_dist.size)])
-    xx_scale = xx_lin - xx_lin[6]  # zero is at bin 6
+    xx_pre = np.array([np.sum(dxx_width[i:6]) for i in range(6)])
+    xx_scale = np.concatenate((xx_pre, xx))  # zero is at bin 6
     # for labeling the x-axis correctly, first 4 bins at different separation
     xx_dummy = np.concatenate(([0, 6, 12, 18], np.arange(cc_theo_best[:, 0].size-4)+19))
     xlabels = [np.append(xx_dummy[:3], xx_dummy[6::5]).astype(int),
@@ -309,7 +309,7 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
     # error from gauß error propagation
     c_bulk_std = fp.compute_c_bulk_stdev(cc, scalings_std, xx)
 
-    save_data(xx, dxx_dist, cc_best, cc_mean, cc_theo_best, cc_theo_mean, tt, tt_ext,
+    save_data(xx, dxx_width, cc_best, cc_mean, cc_theo_best, cc_theo_mean, tt, tt_ext,
               error, t_best, t_mean, best_results, averages, stdevs, D_mean, D_best,
               F_mean, F_best, D_std, F_std, scalings_mean, scalings_std, scalings_best,
               c_bulk_mean, c_bulk_std, c_bulk_best, result.root._v_nchildren, alpha, crit_err, savePath)
@@ -388,7 +388,7 @@ def main():
             try:
                 res = optimization(init, bnds, xx, cc, tt, dxx_dist, dxx_width, alpha, verbosity)
                 append_result(res, results, completed_runs)  # append to .hdf storage file
-                print('\nCompleted %i runs out of %i...\n' % (completed_runs+1, len(inits)))
+                print('\nCompleted %i runs out of %i...\n' % (completed_runs, len(inits)))
                 completed_runs += 1
             except KeyboardInterrupt:
                 print('\n\nScript has been terminated.\nData will now be analyzed...')
