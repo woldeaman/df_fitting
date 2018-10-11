@@ -60,28 +60,26 @@ def figure_diffusivities(d_sol, d_gel, f_gel, error, name='params_dsol',
 def read_data(path, diffusivities, sub_folder=''):
     """Read data from simulations."""
     # cycle through all simulations
-    D_sol, D_gel, F_gel, Error = {}, {}, {}, {}
-    for set in setups:
-        D_sol[set], D_gel[set], F_gel[set], Error[set] = [], [], [], []
-        for d in diffusivities[set]:
-            subpath = '%s/DSol_%s/%s' % (set, d, sub_folder)
-            err_raw = np.loadtxt(path+subpath+'minError.txt', delimiter=',')
-            df_raw = np.loadtxt(path+subpath+'DF_best.txt', delimiter=',')
-            min_err = np.min(err_raw)  # gather minimal error
-            d_sol, d_gel = df_raw[0, 0], df_raw[-1, 0]  # gather D's
-            f_gel = df_raw[-1, 1]  # gather F
-            # save loaded data in lists
-            D_sol[set].append(d_sol)
-            D_gel[set].append(d_gel)
-            F_gel[set].append(f_gel)
-            Error[set].append(min_err)
+    D_sol, D_gel, F_gel, Error = [], [], [], []
+    for d in diffusivities:
+        subpath = '/DSol_%s/%s' % (d, sub_folder)
+        err_raw = np.loadtxt(path+subpath+'minError.txt', delimiter=',')
+        df_raw = np.loadtxt(path+subpath+'DF_best.txt', delimiter=',')
+        min_err = np.min(err_raw)  # gather minimal error
+        d_sol, d_gel = df_raw[0, 0], df_raw[-1, 0]  # gather D's
+        f_gel = df_raw[-1, 1]  # gather F
+        # save loaded data in lists
+        D_sol.append(d_sol)
+        D_gel.append(d_gel)
+        F_gel.append(f_gel)
+        Error.append(min_err)
 
-        # convert to sorted arrays
-        order = np.argsort(D_sol[set])
-        D_sol[set] = np.array(D_sol[set])[order]
-        D_gel[set] = np.array(D_gel[set])[order]
-        F_gel[set] = np.array(F_gel[set])[order]
-        Error[set] = np.array(Error[set])[order]
+    # convert to sorted arrays
+    order = np.argsort(D_sol)
+    D_sol = np.array(D_sol)[order]
+    D_gel = np.array(D_gel)[order]
+    F_gel = np.array(F_gel)[order]
+    Error = np.array(Error)[order]
 
     return D_sol, D_gel, F_gel, Error
 ##########################################################################
@@ -90,8 +88,8 @@ def read_data(path, diffusivities, sub_folder=''):
 ################################
 #    SETTING UP ENVIRONMENT    #
 ##########################################################################
-setups = ['gel6_dex4']
-DSols_theo = [333.86]  # fitted value for DSol for different dextrans
+setups = ['gel6_dex4', 'gel6_dex20', 'gel6_dex70', 'gel10_dex4', 'gel10_dex20', 'gel10_dex70']
+DSols_theo = [333.86, 89.55, 61.24, 219.97, 139.35, 0.62]  # fitted value for DSol for different setups
 diffusivities = {set: [1, 10, 50]+[d for d in range(100, 1000, 100)]+[d_theo]
                  for set, d_theo in zip(setups, DSols_theo)}
 path_d_data = home+"/Desktop/Cluster/jobs/fokkerPlanckModel/PEG_dextran/6.Batch_DSol_analysis/"
@@ -102,7 +100,11 @@ path_d_data = home+"/Desktop/Cluster/jobs/fokkerPlanckModel/PEG_dextran/6.Batch_
 #             MAIN LOOP         #
 ##########################################################################
 # read errors for different d values
-D_sol, D_gel, F_gel, Error = read_data(path_d_data, diffusivities, sub_folder='gel6_dex4/results/')
+D_sol, D_gel, F_gel, Error = {}, {}, {}, {}
+for set in setups:
+    d_sol, d_gel, f_gel, err = read_data(path_d_data+'/%s' % set, diffusivities[set],
+                                         sub_folder='%s/results/' % set)
+    D_sol[set], D_gel[set], F_gel[set], Error[set] = d_sol, d_gel, f_gel, err
 
 for i, set in enumerate(setups):
     figure_diffusivities(D_sol[set], D_gel[set], F_gel[set], Error[set],
