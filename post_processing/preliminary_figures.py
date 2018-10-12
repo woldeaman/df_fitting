@@ -16,7 +16,7 @@ import sys
 #  DEFINITIONS AND FUNCTIONS    #
 ##########################################################################
 def compute_amount(discretizations, z_vectors, c_exps, scalings, d_sols, d_gels,
-                   delta_fs, t_sigs, d_sigs, t_max=50000, dt=None):
+                   delta_fs, t_sigs, d_sigs, dextrans, t_max=50000, dt=None):
     """Compute averaged concentration in three different segments."""
     if dt is None:  # standart dt = 10 s
         dt = {g: {d: 10 for d in dextrans[g]} for g in gels}
@@ -61,7 +61,7 @@ def compute_amount(discretizations, z_vectors, c_exps, scalings, d_sols, d_gels,
     return avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp, avg_trans_exp
 
 
-def discretizations_and_initial_profiles(path):
+def discretizations_and_initial_profiles(path, dextrans):
     """Gather and re-compute discretizations and initial profiles for each setup."""
     discretizations, z_vectors, c_exp = {}, {}, {}
     for g in gels:  # cycle through all data and read xx-vectors
@@ -78,7 +78,7 @@ def discretizations_and_initial_profiles(path):
     return discretizations, c_exp, z_vectors
 
 
-def read_results(path):
+def read_results(path, dextrans):
     """Read fit results from analysed data."""
     D_sol, D_gel, dF, t_sig, d_sig = {}, {}, {}, {}, {}  # storing data in dicts
     scalings = {}
@@ -268,44 +268,48 @@ def figure_explanation(save=False, savePath=None):
 
 
 @mpltex.acs_decorator  # making acs-style figures
-def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, scale='linear',
+def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, dscale='linear',
                    savePath=None, locs_dLegend=['upper center', 'upper right'],
                    name='DF_results'):
     """Plot results in nice figure."""
     gel_styles = {6: '-o', 10: 's--'}  # plotting styles for different gels
-    diff_cols = ['m', 'r']  # colors for D_sol, D_gel
+    meas_col = ['m', 'c']  # colors for different measurements
 
-    fig, axes = plt.subplots(1, 2, sharex='all')
+    fig, axes = plt.subplots(1, 3, sharex='all')
     fig.text(0.005, 0.92, 'A', fontsize='xx-large', weight='extra bold')  # add subplot label
-    fig.text(0.5, 0.92, 'B', fontsize='xx-large', weight='extra bold')
-    # plot diffusivities first
-    for dat, col in zip([D_sol, D_gel], diff_cols):
-        for g, mfcs in zip(gels, [col, 'white']):
-            axes[0].errorbar(dextrans[g], dat[g][:, 0], dat[g][:, 1],
-                             fmt=col+gel_styles[g], mfc=mfcs)
-    axes[0].set(xlabel='$M_{\\text{dex}}$ [kDa]', ylabel='$D$ [$\mu$m$^2$/s]')
-    # dummy plots for legends
-    D_plts = {g: [plt.plot([None], '%s%s' % (g_style, d_style), mfc=d_style) if g == gels[0] else
-                  plt.plot([None], '%s%s' % (g_style, d_style), mfc='white') for d_style in diff_cols]
-              for g, g_style in gel_styles.items()}
-    leg2 = axes[0].legend([d[0] for d in D_plts[6]], ['$D_{\\text{sol}}$', '$D_{\\text{gel}}$'],
-                          title='\\underline{$M_{\\text{gel}} = 6$ kDa}', frameon=False, loc=locs_dLegend[0])
-    axes[0].legend([d[0] for d in D_plts[10]], ['$D_{\\text{sol}}$', '$D_{\\text{gel}}$'],
-                   title='\\underline{$M_{\\text{gel}} = 10$ kDa}', frameon=False, loc=locs_dLegend[1])
-    axes[0].add_artist(leg2)
-    axes[0].set_yscale(scale)
+    fig.text(0.33, 0.92, 'B', fontsize='xx-large', weight='extra bold')
+    fig.text(0.67, 0.92, 'C', fontsize='xx-large', weight='extra bold')
 
-    # now plot free energies
-    for g, mfcs in zip(gels, ['b', 'white']):
-        axes[1].errorbar(dextrans[g], dF[g][:, 0], dF[g][:, 1],
-                         fmt='b'+gel_styles[g], mfc=mfcs)
-    axes[1].axhline(0, ls=":", c='k')
-    axes[1].set(xlabel='$M_{\\text{dex}}$ [kDa]', ylabel='$\Delta F$ [$k_{\\text{B}}T$]')
-    # dummy plots for legends
-    gel6, gel10 = plt.plot([None], 'b%s' % gel_styles[6]), plt.plot([None], 'b%s' % gel_styles[10], mfc='white')
-    axes[1].legend([gel6[0], gel10[0]], ['$M_{\\text{gel}} = 6$ kDa', '$M_{\\text{gel}} = 10$ kDa'],
-                   frameon=False)
-    axes[1].set_yscale(scale)
+    # plot diffusivities first
+    for ax, dat, ylab in zip(axes, [D_sol, D_gel, dF],
+                             ['$D_{\\text{sol}}$ [$\mu$m$^2$/s]',
+                              '$D_{\\text{gel}}$ [$\mu$m$^2$/s]',
+                              '$\Delta F$ [$k_{\\text{B}}T$]']):
+        for d, dex, col in zip(dat, dextrans, meas_col):
+            for g, mfcs in zip(gels, [col, 'white']):
+                ax.errorbar(dex[g], d[g][:, 0], d[g][:, 1],
+                            fmt=col+gel_styles[g], mfc=mfcs)
+                ax.set_xticks([4, 10, 20, 40, 60, 70])
+                ax.set_ylabel(ylab)
+                ax.set_xlabel('$M_{\\text{dex}}$ [kDa]')
+
+    # setting diffusivity yscale
+    for ax in axes[:-1]:
+        ax.set_yscale(dscale)
+
+    # dummy plots for legend
+    plts = [[plt.plot([None], '%s%s' % (gel_styles[g], col), mfc=g_mfc)
+             for g, g_mfc in zip(gels, [col, 'white'])]
+            for col in meas_col]
+    leg1 = axes[0].legend([p[0] for p in plts[0]],
+                          ['$M_{\\text{gel}}$ = %d kDa' % g for g in gels],
+                          frameon=False, title='\\underline{Measurement 2}', loc=locs_dLegend[0],
+                          fontsize='small', markerscale=0.75, handlelength=1.2)
+    axes[0].legend([p[0] for p in plts[1]],
+                   ['$M_{\\text{gel}}$ = %d kDa' % g for g in gels],
+                   frameon=False, title='\\underline{Measurement 1}', loc=locs_dLegend[1],
+                   fontsize='small', markerscale=0.75, handlelength=1.2)
+    axes[0].add_artist(leg1)
 
     # for double column figures in acs style format
     w_double = 7  # inch size for width of double column figure for ACS journals
@@ -369,7 +373,7 @@ def figure_theory(r_h, D_sol_exp, D_gel_exp, dF_exp, D_ratio_theo, K_theo,
 
 @mpltex.acs_decorator  # making acs-style figures
 def figure_amount_time(avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp,
-                       avg_trans_exp, save=False, savePath=None):
+                       avg_trans_exp, dextrans, save=False, savePath=None):
     """Make figure for temporal evolution of average concentration in different segments."""
     for g in gels:
         for dex in dextrans[g]:
@@ -457,11 +461,14 @@ def make_animation(dx_dist, zz_exp, c_init, Dsol, Dgel, dF, t_sig, d_sig,
 ##########################################################################
 gels = [6, 10]  # molecular weight of the analyzed gels [kDa]
 # previous batch
-# dextrans = {6: [4, 10, 20], 10: [4, 10]}  # molecular weight of analyzed dextrans for the different gels
-dextrans = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed dextrans for the different gels
+dextrans_1 = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed dextrans for the different gels
+dextrans_2 = {6: [4, 10, 20], 10: [4, 10]}  # molecular weight of analyzed dextrans for the different gels
 dt = {g: {4: 10, 20: 10, 70: 30} for g in gels}  # new time discretization
 home = '/Users/woldeaman/'  # change home directory accordingly
-path_to_data = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/'
+path_to_data_1 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/'
+path_to_data_2 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/ComputedData/'
+measurements = [path_to_data_1, path_to_data_2]  # gather paths for different measurements
+dextrans_compt = [dextrans_1, dextrans_2]
 save_path = home+'/Desktop'  # by default save on Desktop
 ##########################################################################
 
@@ -470,13 +477,22 @@ save_path = home+'/Desktop'  # by default save on Desktop
 #  MAIN LOOP  #
 ##########################################################################
 # read fit data
-D_sol, D_gel, dF, t_sig, d_sig, scalings = read_results(path_to_data)
+D_sol, D_gel, dF, t_sig, d_sig, scalings = [], [], [], [], [], []
+for mes, dex in zip(measurements, dextrans_compt):  # gather data from different measurements
+    d_sol, d_gel, df, t_s, d_s, scal = read_results(mes, dex)
+    D_sol.append(d_sol)
+    D_gel.append(d_gel)
+    dF.append(df)
+    t_sig.append(t_s)
+    d_sig.append(d_s)
+    scalings.append(scal)
+
 # read discretizations for analysis
-discretizations, c_exps, z_vectors = discretizations_and_initial_profiles(path_to_data)
+discretizations, c_exps, z_vectors = discretizations_and_initial_profiles(path_to_data_1, dextrans_2)
 # compute time resolved average concentration
 (avg_bulk_theo, avg_trans_theo,
  avg_gel_theo, avg_gel_exp, avg_trans_exp) = compute_amount(discretizations, z_vectors, c_exps, scalings,
-                                                            D_sol, D_gel, dF, t_sig, d_sig, dt=dt)
+                                                            D_sol, D_gel, dF, t_sig, d_sig, dextrans=dextrans_2, dt=dt)
 # computing theoretical data
 r_h, r_pore_fit, K_theo, d_ratio_theo = fit_theory(dF)
 
@@ -488,9 +504,9 @@ example_dt = 10
 figure_c_init(discretizations[example[0]][example[1]], c_exps[example[0]][example[1]][0], save=True, savePath=save_path)
 figure_scalings(z_vectors[example[0]][example[1]], c_exps[example[0]][example[1]],
                 np.arange(0, len(c_exps[example[0]][example[1]])*example_dt, example_dt), scalings[example[0]][example[1]], save=True, savePath=save_path)
-figure_results(gels, dextrans, D_sol, D_gel, dF, save=True, savePath=save_path)
+figure_results(gels, dextrans_compt, D_sol, D_gel, dF, save=True, savePath=save_path)
 # log plot figure
-figure_results(gels, dextrans, D_sol, D_gel, dF, save=True, savePath=save_path, scale='log',
+figure_results(gels, dextrans_compt, D_sol, D_gel, dF, save=True, savePath=save_path, dscale='log',
                locs_dLegend=['upper right', 'lower left'], name='DF_results_log')
 figure_amount_time(avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp, avg_trans_exp, save=True, savePath=save_path)
 figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=True, savePath=save_path)
@@ -498,7 +514,7 @@ figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=True, savePath=s
 
 t_max = 12000  # max video time for dextrans in seconds
 for g in gels:
-    for i, dex in enumerate(dextrans[g]):
+    for i, dex in enumerate(dextrans_2[g]):
         make_animation(discretizations[g][dex], z_vectors[g][dex], c_exps[g][dex][0], D_sol[g][i, 0],
                        D_gel[g][i, 0], dF[g][i, 0], t_sig[g][i, 0], d_sig[g][i, 0], t_max,
                        name='gel%i_dex%i' % (g, dex), savePath=save_path)

@@ -3,6 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import mpltex  # for acs style figures
+import re
 
 # change home directory accordingly
 home = '/Users/woldeaman/'
@@ -14,30 +15,38 @@ home = '/Users/woldeaman/'
 #  DEFINITIONS AND FUNCTIONS    #
 ##########################################################################
 @mpltex.acs_decorator  # making acs-style figures
-def figure_diffusivities(d_sol, d_gel, f_gel, error, name='params_dsol',
-                         title='', save=False, scale='lin', opti=None):
+def figure_diffusivities(d_sol, d_gel, f_gel, error, opti, name='params_dsol',
+                         title='', save=False, scale='lin'):
     """Plot parameters change with d_sol."""
+    # format correct title
+    m_gel, m_dex = int(re.findall('\d+', title[0])[0]), int(re.findall('\d+', title[1])[0])
+    title = '$M_{\\text{gel}}$ = %d kDa, $M_{\\text{dex}}$ = %d kDa' % (m_gel, m_dex)
+    # create figure
     fig, axes = plt.subplots(3, 1, sharex='col')
-    axes[0].plot(d_sol, error, 'k--.')
-    if opti is not None:  # plot error
-        optimum = axes[0].axvline(opti, c='k', ls=':')
+    axes[0].plot(d_sol, error, '.k-')
+    optimum = axes[0].axvline(opti, c='k', ls=':')
     axes[0].set(ylabel="Minimal error $\sigma$", title=title)  # add title if prefered
     min_err = error[np.argmin(abs(d_sol-opti))]  # minimal error
     axes[0].axhline(min_err, ls=":", c='k')  # indicate optimal error value
-    axes[0].set_ylim([min_err-0.25*min_err, 2*min_err])
+    # add inset for closer look on error profiles
+    left, bottom, width, height = [0.6, 0.78, 0.3, 0.1]
+    inset = fig.add_axes([left, bottom, width, height])
+    inset.plot(d_sol, error, '.k-')
+    inset.set_ylim([min_err-0.05*min_err, min_err+0.25*min_err])
+    inset.set_xlim([opti-300, opti+300])
+    inset.axhline(min_err, ls=":", c='k')
+    inset.axvline(opti, ls=":", c='k')
 
     # plot D_gel
-    axes[1].plot(d_sol, d_gel, 'r--.')
-    if opti is not None:
-        axes[1].axvline(opti, ls=':', c='r')
+    axes[1].plot(d_sol, d_gel, '.r-')
+    axes[1].axvline(opti, ls=':', c='r')
     axes[1].set(ylabel="$D_{\\text{gel}}$ [$\mu$m$^2$/s]")
     best_dgel = d_gel[np.argmin(abs(d_sol-opti))]  # best solution for D_Gel
     axes[1].axhline(best_dgel, ls=":", c='r')  # indicate optimal value
 
     # plot free energy
-    axes[2].plot(d_sol, f_gel, 'b--.')
-    if opti is not None:
-        axes[2].axvline(opti, ls=':', c='b')
+    axes[2].plot(d_sol, f_gel, '.b-')
+    axes[2].axvline(opti, ls=':', c='b')
     axes[2].set(xlabel="$D_{\\text{sol}}$ [$\mu$m$^2$/s]",
                 ylabel="$F_{\\text{gel}}$ [$k_{\\text{B}}T$]")
     best_f = f_gel[np.argmin(abs(d_sol-opti))]  # best solution for dF
