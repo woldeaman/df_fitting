@@ -269,13 +269,17 @@ def figure_explanation(save=False, savePath=None):
 
 @mpltex.acs_decorator  # making acs-style figures
 def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, dscale='linear',
-                   savePath=None, locs_dLegend=['upper center', 'upper right'],
+                   xscale='linear', savePath=None, locs_dLegend=['upper center', 'upper right'],
                    name='DF_results'):
     """Plot results in nice figure."""
     gel_styles = {6: '-o', 10: 's--'}  # plotting styles for different gels
     meas_col = ['m', 'c']  # colors for different measurements
+    if xscale in 'log':  # share x-axis
+        share_x = False
+    else:
+        share_x = True
 
-    fig, axes = plt.subplots(1, 3, sharex='all')
+    fig, axes = plt.subplots(1, 3, sharex=share_x)
     fig.text(0.005, 0.92, 'A', fontsize='xx-large', weight='extra bold')  # add subplot label
     fig.text(0.33, 0.92, 'B', fontsize='xx-large', weight='extra bold')
     fig.text(0.67, 0.92, 'C', fontsize='xx-large', weight='extra bold')
@@ -296,6 +300,7 @@ def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, dscale='linear'
     # setting diffusivity yscale
     for ax in axes[:-1]:
         ax.set_yscale(dscale)
+        ax.set_xscale(xscale)
 
     # dummy plots for legend
     plts = [[plt.plot([None], '%s%s' % (gel_styles[g], col), mfc=g_mfc)
@@ -506,7 +511,7 @@ figure_scalings(z_vectors[example[0]][example[1]], c_exps[example[0]][example[1]
                 np.arange(0, len(c_exps[example[0]][example[1]])*example_dt, example_dt), scalings[example[0]][example[1]], save=True, savePath=save_path)
 figure_results(gels, dextrans_compt, D_sol, D_gel, dF, save=True, savePath=save_path)
 # log plot figure
-figure_results(gels, dextrans_compt, D_sol, D_gel, dF, save=True, savePath=save_path, dscale='log',
+figure_results(gels, dextrans_compt, D_sol, D_gel, dF, save=True, savePath=save_path, dscale='log', xscale='log',
                locs_dLegend=['upper right', 'lower left'], name='DF_results_log')
 figure_amount_time(avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp, avg_trans_exp, save=True, savePath=save_path)
 figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=True, savePath=save_path)
