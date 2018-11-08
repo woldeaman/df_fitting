@@ -15,3 +15,10 @@ __pycache__
 # optimization results #
 ########################
 result*
+
+# install results #
+########################
+/build
+*.egg
+/DF_fitting.egg-info
+/dist
