@@ -23,14 +23,14 @@ def plot_profiles(xx, cc, tt, save=False, savePath=os.getcwd(), name='profiles')
     for c, col in zip(cc.T, colors):  # plot rest of profiles
         plt.plot(xx, c, '.', color=col)
     plt.xlabel('z-distance [$\mu$m]')
-    plt.ylabel('Normalized concentration')
+    plt.ylabel('Concentration')
     # place colorbar in inset in current axis
     fig.colorbar(scalarMap, cmap=cm.jet, norm=norm, orientation='vertical',
                  ax=plt.gca(), label='Time [min]', pad=0.0125)
 
-    fig.tight_layout(pad=0.5, w_pad=0.55)
+    fig.tight_layout(pad=1, w_pad=0.55)
     if save:
-        plt.savefig(savePath+'%s.eps' % name)
+        plt.savefig(savePath+'/%s.eps' % name)
     else:
         plt.show()
 
@@ -78,22 +78,27 @@ def plot_residuals(xx, residuals, tt, t_sig, save=False, savePath=os.getcwd(),
 #################
 #  MAIN LOOP    #
 ##########################################################################
-gels, dextrans = [6, 10], [4, 20, 70]
-dt_setups = {g: {4: 10, 20: 10, 70: 30} for g in gels}
-for g in gels:
-    for d in dextrans:
-        # plotting profiles
-        path_p = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/gel%i_dex%i' % (g, d)  # path to experimental profiles
-        data = np.loadtxt(path_p+'/gel%i_dex%i.txt' % (g, d), delimiter=',')  # read profile data
-        dt = dt_setups[g][d]  # intervall between recorded stacks
-        xx, cc_exp, tt = data[:, 0], data[:, 1:], np.arange(0, dt*data[0, 1:].size, dt)
-        # plot_profiles(xx, cc_exp, tt, save=True, savePath='/Users/woldeaman/Desktop/', name='dex4_solution')
-        # plotting residuals
-        path_res = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/gel%i_dex%i' % (g, d)  # path to fit results
-        t_sig = pd.read_excel(path_res+'/results.xlsx')['Averaged Results'].values[3]
-        scalings = np.loadtxt(path_res+'/scalings_best.txt', delimiter=',')[:, 1]
-        cc_scaled = [f*c for f, c in zip(scalings, cc_exp.T)]  # compute scaled experimental data
-        cc_theo = np.loadtxt(path_res+'/cc_theo_best.txt', delimiter=',')
-        residuals = [c_e - c_t[6:] for c_e, c_t in zip(cc_scaled[1:], cc_theo[:, 1:].T)]
-        plot_residuals(xx, residuals, tt, t_sig, save=True, savePath='/Users/woldeaman/Desktop/', name='gel%s_dex%s_residuals' % (g, d))
+def main():
+    gels, dextrans = [6, 10], [4, 20, 70]
+    dt_setups = {g: {4: 10, 20: 10, 70: 30} for g in gels}
+    for g in gels:
+        for d in dextrans:
+            # plotting profiles
+            path_p = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/gel%i_dex%i' % (g, d)  # path to experimental profiles
+            data = np.loadtxt(path_p+'/gel%i_dex%i.txt' % (g, d), delimiter=',')  # read profile data
+            dt = dt_setups[g][d]  # intervall between recorded stacks
+            xx, cc_exp, tt = data[:, 0], data[:, 1:], np.arange(0, dt*data[0, 1:].size, dt)
+            # plot_profiles(xx, cc_exp, tt, save=True, savePath='/Users/woldeaman/Desktop/', name='dex4_solution')
+            # plotting residuals
+            path_res = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/gel%i_dex%i' % (g, d)  # path to fit results
+            t_sig = pd.read_excel(path_res+'/results.xlsx')['Averaged Results'].values[3]
+            scalings = np.loadtxt(path_res+'/scalings_best.txt', delimiter=',')[:, 1]
+            cc_scaled = [f*c for f, c in zip(scalings, cc_exp.T)]  # compute scaled experimental data
+            cc_theo = np.loadtxt(path_res+'/cc_theo_best.txt', delimiter=',')
+            residuals = [c_e - c_t[6:] for c_e, c_t in zip(cc_scaled[1:], cc_theo[:, 1:].T)]
+            plot_residuals(xx, residuals, tt, t_sig, save=True, savePath='/Users/woldeaman/Desktop/', name='gel%s_dex%s_residuals' % (g, d))
+
+
+if __name__ == "__main_":
+    main()
 ##########################################################################
