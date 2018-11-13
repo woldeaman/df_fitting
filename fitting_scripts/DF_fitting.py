@@ -17,10 +17,6 @@ import scipy.optimize as op
 import scipy.special as sp
 startTime = time.time()  # start measuring run time
 
-#####################################################################
-d_ref = 0  # NOTE: setting diffusivity reference for regularization #
-#####################################################################
-
 
 def save_data(xx, dxx_width, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_theo_mean,
               tt_og, tt_ext, errors, t_best, t_mean, best_params, avg_params, std_params, D_mean,
@@ -120,7 +116,8 @@ def save_data(xx, dxx_width, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_t
         err_sol = np.sqrt(np.sum(residuals_best**2) / (cc_scaled_best[1].size *  # ||A*x - y||, only scaled to physical units
                                                        len(cc_scaled_best[1:])))
         # compute regularization term, use best fit results
-        err_reg = np.linalg.norm(best_params[0] - d_ref)  # ||d - d_ref||
+        d_ref = np.roll(D_best, -1)
+        err_reg = np.linalg.norm(D_best[:-1] - d_ref[:-1])  # ||d - d_ref||
         worksheet.write('D8', '%.5f' % err_reg)  # write to table
         worksheet.write('D9', '%.5f' % err_sol)
 
@@ -344,7 +341,8 @@ def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, alpha, check=False):
     RRn = RR.reshape(RR.size)  # residual vector contains all deviations
     # tykhonov regularization, only contributes for alpha > 0
     if alpha > 0:
-        regularization = alpha*(d[0] - d_ref)  # regularization term
+        d_ref = np.roll(D, -1)
+        regularization = alpha*(D[:-1] - d_ref[:-1])  # regularization term
         RRn = np.append(RRn, regularization)  # add regularization to residuals
 
     return RRn
