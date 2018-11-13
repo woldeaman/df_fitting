@@ -30,7 +30,7 @@ def plot_profiles(xx, cc, tt, save=False, savePath=os.getcwd(), name='profiles')
 
     fig.tight_layout(pad=1, w_pad=0.55)
     if save:
-        plt.savefig(savePath+'/%s.eps' % name)
+        plt.savefig(savePath+'/%s.pdf' % name)
     else:
         plt.show()
 
@@ -69,7 +69,7 @@ def plot_residuals(xx, residuals, tt, t_sig, save=False, savePath=os.getcwd(),
                  ax=plt.gca(), label='Time [min]', pad=0.0125)
     fig.tight_layout(pad=0.5, w_pad=0.55)
     if save:
-        plt.savefig(savePath+'%s.eps' % name)
+        plt.savefig(savePath+'%s.pdf' % name)
     else:
         plt.show()
 ##########################################################################
