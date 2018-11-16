@@ -341,8 +341,12 @@ def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, alpha, check=False):
     RRn = RR.reshape(RR.size)  # residual vector contains all deviations
     # tykhonov regularization, only contributes for alpha > 0
     if alpha > 0:
-        d_ref = np.roll(D, -1)
-        regularization = alpha*(D[:-1] - d_ref[:-1])  # regularization term
+        # regularize all paramters to be simple
+        sig_reg = alpha*(np.array([t_sig, d_sig]))  # transition and width is zero
+        d_reg, f_reg = alpha*np.diff(d), alpha*np.diff(f)  # no change in D or F
+        DF_reg = np.append(sig_reg, [f_reg, d_reg])
+        scalings_reg = alpha*(parameters[6:]-1)  # scalings -> 1
+        regularization = np.append(DF_reg, scalings_reg)  # regularization term
         RRn = np.append(RRn, regularization)  # add regularization to residuals
 
     return RRn

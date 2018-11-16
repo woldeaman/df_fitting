@@ -32,21 +32,6 @@ def startUp_slim():
     verbosity = args.verbosity
     alpha = args.alpha
 
-    # reading run parameters from stdin
-    print('Set temporal resolution, supply dt in seconds:')
-    dt = int(sys.stdin.readline())
-
-    print('Choose profiles for analysis (supply timepoints in seconds,'
-          '"all" means all profiles will be analyzed):')
-    answer = input()
-    if "all" in answer:
-        tt = "all"
-    else:
-        tt = np.array([int(nbr) for nbr in answer.split()])
-
-    print('Set number of analysis runs:')
-    Runs = int(sys.stdin.readline())  # how many start D-values should be tried
-
     print('\nReading profiles...')
     try:  # change seperator accordingly
         data = readData(args.path, sep=';')
@@ -56,6 +41,21 @@ def startUp_slim():
         except ValueError:
             data = readData(args.path, sep=' ')
     xx = data[:, 0]  # first column assumed to be distance vector
+
+    # reading run parameters from stdin
+    print('Set temporal resolution, supply dt in seconds:')
+    dt = int(sys.stdin.readline())
+
+    print("Choose profiles for analysis, timepoints range from 0 to {} seconds 'all' means all profiles will be analyzed):"
+          .format(data[0, 1:].size*dt))
+    answer = input()
+    if "all" in answer:
+        tt = "all"
+    else:
+        tt = np.array([int(nbr) for nbr in answer.split()])
+
+    print('Set number of analysis runs:')
+    Runs = int(sys.stdin.readline())  # how many start D-values should be tried
 
     # now reading profiles based on input for different timepoints
     if "all" in tt:
