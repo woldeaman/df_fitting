@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Analyse runs for regularization of DSol"""
+"""Analyse runs for regularization."""
 import numpy as np
 import matplotlib.pyplot as plt
 import mpltex  # for acs style figures
 
-home = '/home/amanuelwk/'
+home = '/Users/woldeaman/'
 
 
 #################################
@@ -14,7 +14,7 @@ def read_data(path, alphas):
     """Read data for all values of regularization parameter alpha."""
     err_sol, err_reg = [], []
     for a in alphas:
-        data = np.loadtxt('%s/results_alpha=%s/res_alpha=%.6f.txt' % (path, a, a))
+        data = np.loadtxt('%s/alpha_%s/res_alpha=%.6f.txt' % (path, a, a))
         err_sol.append(data[0])
         err_reg.append(data[1])
 
@@ -41,8 +41,8 @@ def plot_lcurve(alphas, err_sol, err_reg, save=False):
 ################################
 #    SETTING UP ENVIRONMENT    #
 ##########################################################################
-alphas = [0.000001, 0.00001, 0.0001, 0.001, 0.01]
-path = home+"/Desktop/reg_DSol/"
+alphas = [0.000001, 0.00001, 0.00005, 0.0001, 0.0005, 0.001, 0.005, 0.01]
+path = home+"/Desktop/Cluster/jobs/fokker_planck_modelling/Block_PEG/regularization/gel10_dex70/"
 ##########################################################################
 
 

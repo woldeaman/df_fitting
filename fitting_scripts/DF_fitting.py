@@ -108,7 +108,7 @@ def save_data(xx, dxx_width, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_t
     worksheet.write('A6', 'd_sig [µm]', bold)
     worksheet.write('A7', 'error', bold)
     if alpha > 0:  # save regularization results
-        worksheet.write('A8', '||d - d_ref||', bold)
+        worksheet.write('A8', '||x - x_ref||', bold)
         worksheet.write('A9', '||A*x - y||', bold)
         # compute difference to solution, use best fit results
         residuals_best = np.array([c_exp - c_num[6:] for c_exp, c_num in
@@ -116,8 +116,9 @@ def save_data(xx, dxx_width, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_t
         err_sol = np.sqrt(np.sum(residuals_best**2) / (cc_scaled_best[1].size *  # ||A*x - y||, only scaled to physical units
                                                        len(cc_scaled_best[1:])))
         # compute regularization term, use best fit results
-        d_ref = np.roll(D_best, -1)
-        err_reg = np.linalg.norm(D_best[:-1] - d_ref[:-1])  # ||d - d_ref||
+        err_reg = regularization_term(best_params[:2], best_params[2:4],
+                                      best_params[4], best_params[5],
+                                      best_params[6:], alpha=1)  # ||x - x_ref||
         worksheet.write('D8', '%.5f' % err_reg)  # write to table
         worksheet.write('D9', '%.5f' % err_sol)
 
@@ -312,6 +313,23 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
               c_bulk_mean, c_bulk_std, c_bulk_best, result.root._v_nchildren, alpha, crit_err, savePath)
 
 
+def regularization_term(d, f, t_sig, d_sig, scalings, alpha=0):
+    """
+    Compute regularization term for residuals.
+    d/f         -   the two values for D/F in bulk/gel
+    t_sig/d_sig -   transition location and width
+    scalings    -   scaling parameters
+    alpha       -   regularization parameter
+    """
+    # regularize all paramters to be as simple as possible
+    sig_reg = alpha*(np.array([t_sig, d_sig]))  # transition and width is zero
+    d_reg, f_reg = alpha*np.diff(d), alpha*np.diff(f)  # no change in D or F
+    DF_reg = np.append(sig_reg, [f_reg, d_reg])
+    scalings_reg = alpha*(scalings-1)  # scalings -> 1
+    regularization = np.append(DF_reg, scalings_reg)  # regularization term
+    return regularization
+
+
 def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, alpha, check=False):
     """Compute residuals for non-linear optimization."""
     # separate fit parameters accordingly
@@ -341,12 +359,8 @@ def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, alpha, check=False):
     RRn = RR.reshape(RR.size)  # residual vector contains all deviations
     # tykhonov regularization, only contributes for alpha > 0
     if alpha > 0:
-        # regularize all paramters to be simple
-        sig_reg = alpha*(np.array([t_sig, d_sig]))  # transition and width is zero
-        d_reg, f_reg = alpha*np.diff(d), alpha*np.diff(f)  # no change in D or F
-        DF_reg = np.append(sig_reg, [f_reg, d_reg])
-        scalings_reg = alpha*(parameters[6:]-1)  # scalings -> 1
-        regularization = np.append(DF_reg, scalings_reg)  # regularization term
+        regularization = regularization_term(d, f, t_sig, d_sig, scalings,
+                                             alpha=alpha)
         RRn = np.append(RRn, regularization)  # add regularization to residuals
 
     return RRn
