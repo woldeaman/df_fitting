@@ -29,16 +29,20 @@ def compute_exp_data(path, name):
 def read_results(path, alphas, xx, cc_all, dxx_dist, dxx_width, tt_fit, dt=10):
     """Read data for all values of regularization parameter alpha."""
     err_sol, err_reg, parameters = [], [], []
+    cc_exp = [cc_all[t//dt] for t in tt_fit]  # get fitted profiles only !
     for a in alphas:
+        # read best fitted parameters
         res = pd.HDFStore('%s/alpha_%s/results.h5' % (path, a))
-        key_list = np.array(list(res.root._v_children.keys()))  # key list to easily iterate over
+        key_list = np.array(list(res.root._v_children.keys()))
         error = np.array([res[key]['cost'].values[0] for key in key_list])
         best_results = res[key_list[np.argmin(error)]+'/x'].values[:, 0]
-        cc_exp = [cc_all[t//dt] for t in tt_fit]  # get fitted profiles only !
+        # compute errors
         reg_term = df.regularization_term(best_results[:2], best_results[2:4],
                                           best_results[4], best_results[5],
                                           best_results[6:], alpha=1)
-        err_term = df.resFun(best_results, xx, cc_exp, tt_fit, dxx_dist, dxx_width, alpha=0)
+        err_term = df.resFun(best_results, xx, cc_exp, tt_fit, dxx_dist, dxx_width,
+                             alpha=0)
+        res.close()  # always close hdf stores!
         parameters.append(best_results)
         err_sol.append(np.sqrt(np.sum(err_term**2)/(cc_exp[1].size*len(cc_exp[1:]))))
         err_reg.append(np.sum(reg_term**2))
@@ -49,8 +53,8 @@ def get_test_set_scalings(scalings, tt_fit, tt_test):
     """Interpolate fitted scaling values for test set profiles."""
     test_scalings = []
     for s in scalings:  # for each alpha interpolate scalings
-        spl = ip.UnivariateSpline(tt_fit, s, s=0, k=1)
-        f_test = spl(tt_test)  # best guess for scalings of unfitted profiles...
+        spl = ip.UnivariateSpline(tt_fit[1:], s, s=0, k=1, ext='raise')
+        f_test = spl(tt_test[1:])  # best guess for scalings of unfitted profiles...
         test_scalings.append(f_test)
     return test_scalings
 
@@ -66,10 +70,10 @@ def compute_test_performance(xx, dxx_dist, dxx_width, cc_all, parameters,
     test_scalings       -  interpolated values for scaling factors for test set
     dt                  -  time between subsequently measured experimental profiles
     """
+    cc_exp = [cc_all[t//dt] for t in tt_test]  # gather test set profiles
     test_set_errs = []
     for p, s in zip(parameters, test_scalings):
         params = np.append(p[:6], s)  # parameter set for each alpha with scaling factors for test set
-        cc_exp = [cc_all[t//dt] for t in tt_test]  # get test set profiles
         residues = df.resFun(params, xx, cc_exp, tt_test, dxx_dist, dxx_width, alpha=0)
         err = np.sqrt(np.sum(residues**2)/(cc_exp[1].size * len(cc_exp[1:])))
         test_set_errs.append(err)
@@ -93,14 +97,18 @@ def plot_lcurve(alphas, err_sol, err_reg, save=False):
 
 
 @mpltex.acs_decorator  # making acs-style figures
-def plot_scalings(scalings, tt, alphas, save=False):
+def plot_scalings(scalings_fit, scalings_test, tt_fit, tt_test, alphas, save=False):
     """Make plot for scalings of different alphas."""
     fig = plt.figure()
     colors = [cm.jet(x) for x in np.linspace(0, 1, len(scalings))]
-    for s, col in zip(scalings, colors):
-        plt.plot(np.array(tt[1:])/60, s, '.--', c=col)
+    for s_f, s_t, col in zip(scalings_fit, scalings_test, colors):
+        plt.plot(np.array(tt_fit[1:])/60, s_f, '.--', c=col)
+        plt.plot(np.array(tt_test[1:])/60, s_t, 's', c=col, mfc='white')
     plt.xlabel('$t_{\\text{j}}$ [min]')
     plt.ylabel('$f_{\\text{j}}$')
+    # dummy plots for legend
+    fit, test = plt.plot([None], '.', c=colors[-1]), plt.plot([None], 's', c=colors[-1], mfc='white')
+    plt.legend([fit[0], test[0]], ['training set', 'test set'], frameon=False)
     norm = mpl.colors.Normalize(vmin=alphas[0], vmax=alphas[-1])
     scalarMap = cm.ScalarMappable(norm=norm, cmap=cm.jet)
     scalarMap.set_array(alphas)  # mapping colors to alpha
@@ -137,9 +145,16 @@ path = home+"/Desktop/Cluster/jobs/fokker_planck_modelling/Block_PEG/regularizat
 ##########################################################################
 cc_all, xx, dxx_dist, dxx_width = compute_exp_data(path+'/alpha_0/', 'gel10_dex70')
 err_sol, err_reg, parameters = read_results(path, alphas, xx, cc_all, dxx_dist, dxx_width, tt_fit, dt=30)
-scalings = [p[:6] for p in parameters]  # extract scaling factors from parameters
 
-plot_scalings(scalings, tt_fit, alphas, save=True)
+len(tt_fit)+len(tt_test)
+scalings = [p[6:] for p in parameters]  # extract scaling factors from parameters
+test_scalings = get_test_set_scalings(scalings, tt_fit, tt_test)
+test_err = compute_test_performance(xx, dxx_dist, dxx_width, cc_all, parameters,
+                                    tt_test, test_scalings, dt=30)
+
+test_err
+plt.plot(alphas[:-1], test_err[:-1])
+plot_scalings(scalings, test_scalings, tt_fit, tt_test, alphas, save=True)
 plot_lcurve(alphas, err_sol, err_reg)
 
 
