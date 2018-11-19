@@ -16,7 +16,7 @@ import sys
 #  DEFINITIONS AND FUNCTIONS    #
 ##########################################################################
 def compute_amount(discretizations, z_vectors, c_exps, scalings, d_sols, d_gels,
-                   delta_fs, t_sigs, d_sigs, dextrans, t_max=50000, dt=None):
+                   delta_fs, t_sig, d_sig, dextrans, t_max=50000, dt=None):
     """Compute averaged concentration in three different segments."""
     if dt is None:  # standart dt = 10 s
         dt = {g: {d: 10 for d in dextrans[g]} for g in gels}
@@ -312,7 +312,7 @@ def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, dscale='linear'
                           fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[0].legend([p[0] for p in plts[1]],
                    ['$M_{\\text{gel}}$ = %d kDa' % g for g in gels],
-                   frameon=False, title='\\underline{Measurement 1}', loc=locs_dLegend[1],
+                   frameon=False, title='\\underline{Measurement 3}', loc=locs_dLegend[1],
                    fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[0].add_artist(leg1)
 
@@ -466,14 +466,16 @@ def make_animation(dx_dist, zz_exp, c_init, Dsol, Dgel, dF, t_sig, d_sig,
 ##########################################################################
 gels = [6, 10]  # molecular weight of the analyzed gels [kDa]
 # previous batch
-dextrans_1 = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed dextrans for the different gels
-dextrans_2 = {6: [4, 10, 20], 10: [4, 10]}  # molecular weight of analyzed dextrans for the different gels
-dt = {g: {4: 10, 20: 10, 70: 30} for g in gels}  # new time discretization
+dextrans_1 = {6: [4, 10, 20], 10: [4, 10]}  # molecular weight of analyzed dextrans for the different gels
+dextrans_2 = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed dextrans for the different gels
+dextrans_3 = {6: [4, 20, 40, 70], 10: [4, 20, 40, 70]}  # molecular weight of analyzed dextrans for the different gels
+dt = {g: {4: 10, 20: 10, 40: 10, 70: 30} for g in gels}  # new time discretization
 home = '/Users/woldeaman/'  # change home directory accordingly
-path_to_data_1 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/'
-path_to_data_2 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/ComputedData/'
-measurements = [path_to_data_1, path_to_data_2]  # gather paths for different measurements
-dextrans_compt = [dextrans_1, dextrans_2]
+path_to_data_1 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/ComputedData/'
+path_to_data_2 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/'
+path_to_data_3 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/7.Batch/ComputedData/'
+measurements = [path_to_data_1, path_to_data_2, path_to_data_3]  # gather paths for different measurements
+dextrans_compt = [dextrans_1, dextrans_2, dextrans_3]
 save_path = home+'/Desktop'  # by default save on Desktop
 ##########################################################################
 
@@ -493,11 +495,13 @@ for mes, dex in zip(measurements, dextrans_compt):  # gather data from different
     scalings.append(scal)
 
 # read discretizations for analysis
-discretizations, c_exps, z_vectors = discretizations_and_initial_profiles(path_to_data_1, dextrans_2)
+discretizations, c_exps, z_vectors = discretizations_and_initial_profiles(path_to_data_3, dextrans_3)
+
 # compute time resolved average concentration
 (avg_bulk_theo, avg_trans_theo,
- avg_gel_theo, avg_gel_exp, avg_trans_exp) = compute_amount(discretizations, z_vectors, c_exps, scalings,
-                                                            D_sol, D_gel, dF, t_sig, d_sig, dextrans=dextrans_2, dt=dt)
+ avg_gel_theo, avg_gel_exp, avg_trans_exp) = compute_amount(discretizations, z_vectors, c_exps, scalings[2],
+                                                            D_sol[2], D_gel[2], dF[2], t_sig[2], d_sig[2], dextrans=dextrans_3, dt=dt)
+
 # computing theoretical data
 r_h, r_pore_fit, K_theo, d_ratio_theo = fit_theory(dF)
 
@@ -511,9 +515,9 @@ figure_scalings(z_vectors[example[0]][example[1]], c_exps[example[0]][example[1]
                 np.arange(0, len(c_exps[example[0]][example[1]])*example_dt, example_dt), scalings[example[0]][example[1]], save=True, savePath=save_path)
 figure_results(gels, dextrans_compt, D_sol, D_gel, dF, save=True, savePath=save_path)
 # log plot figure
-figure_results(gels, dextrans_compt, D_sol, D_gel, dF, save=True, savePath=save_path, dscale='log', xscale='log',
+figure_results(gels, dextrans_compt[1:], D_sol[1:], D_gel[1:], dF[1:], save=True, savePath=save_path, dscale='log', xscale='log',
                locs_dLegend=['upper right', 'lower left'], name='DF_results_log')
-figure_amount_time(avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp, avg_trans_exp, save=True, savePath=save_path)
+figure_amount_time(avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp, avg_trans_exp, dextrans_3, save=True, savePath=save_path)
 figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=True, savePath=save_path)
 
 
