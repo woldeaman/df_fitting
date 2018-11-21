@@ -364,7 +364,7 @@ def plot_scalings(scalings_avg, scalings_std, c_avg_bulk, c_avg_bulk_std, tt,
     fig.tight_layout(pad=0.5, w_pad=0.55)
 
     if save:
-        plt.savefig(savePath+'scalings.eps')
+        plt.savefig(savePath+'scalings.pdf')
     else:
         plt.show()
 
@@ -459,6 +459,6 @@ def figure_combined(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
     fig.tight_layout(pad=0.5, w_pad=0.55)
 
     if save:
-        plt.savefig(savePath+'results_combined_%s.eps' % suffix)
+        plt.savefig(savePath+'results_combined_%s.pdf' % suffix)
     else:
         plt.show()

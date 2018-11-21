@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+pdf# -*- coding: utf-8 -*-
 """Analyse D and F results of fits."""
 import numpy as np
 import pandas as pd
@@ -83,7 +83,7 @@ def read_results(path, dextrans):
     D_sol, D_gel, dF, t_sig, d_sig = {}, {}, {}, {}, {}  # storing data in dicts
     scalings = {}
     for g in gels:
-        d_s, d_g, f, t_s, del_s = [], [], [], [], []
+        D_sol[g], D_gel[g], dF[g], t_sig[g], d_sig[g] = {}, {}, {}, {}, {}
         scalings[g] = {}
         for dex in dextrans[g]:  # cycle through all analyses
             data = pd.read_excel(path+'/gel%i_dex%i/results.xlsx' % (g, dex))
@@ -91,11 +91,9 @@ def read_results(path, dextrans):
             parameters = np.array([data['Averaged Results'][:5].values,
                                    data['Standart Deviation'][:5].values])
             scales = np.loadtxt(path+'/gel%i_dex%i/scalings_avg.txt' % (g, dex), delimiter=',')[:, 2]
-            for i, store in enumerate([d_s, d_g, f, t_s, del_s]):
-                store.append(parameters[:, i])  # save to list first
+            D_sol[g][dex], D_gel[g][dex], dF[g][dex] = parameters[:, 0], parameters[:, 1], parameters[:, 2]
+            t_sig[g][dex], d_sig[g][dex] = parameters[:, 3], parameters[:, 4]
             scalings[g][dex] = scales
-        D_sol[g], D_gel[g], dF[g] = np.array(d_s), np.array(d_g), np.array(f)
-        t_sig[g], d_sig[g] = np.array(t_s), np.array(del_s)
 
     return D_sol, D_gel, dF, t_sig, d_sig, scalings
 
@@ -193,7 +191,7 @@ def figure_c_init(discretization, c_init, save=False, savePath=None):
     plt.legend([ext[0], exp[0]], ['extended', 'experiment'], frameon=False)
 
     if save:
-        plt.savefig(savePath+'/c_init.eps')
+        plt.savefig(savePath+'/c_init.pdf')
     else:
         plt.show()
 
@@ -219,7 +217,7 @@ def figure_scalings(zz_exp, c_exp, tt, scalings, skip=5, save=False, savePath=No
     fig.colorbar(dummy_map, label='Time [min]', pad=0.0125)
 
     if save:
-        plt.savefig(savePath+'/scaling_comparison.eps')
+        plt.savefig(savePath+'/scaling_comparison.pdf')
     else:
         plt.show()
 
@@ -262,18 +260,20 @@ def figure_explanation(save=False, savePath=None):
     fig.tight_layout(pad=0.5, w_pad=0.55)
 
     if save:
-        plt.savefig(savePath+'/model_intro.eps')
+        plt.savefig(savePath+'/model_intro.pdf')
     else:
         plt.show()
 
 
 @mpltex.acs_decorator  # making acs-style figures
-def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, dscale='linear',
-                   xscale='linear', savePath=None, locs_dLegend=['upper center', 'upper right'],
+def figure_results(exp_data, gels, D_sol, D_gel, dF, save=False, dscale='linear',
+                   xscale='linear', savePath=None, locs_dLegend=['upper right',
+                                                                 'lower left',
+                                                                 'lower left'],
                    name='DF_results'):
     """Plot results in nice figure."""
-    gel_styles = {6: '-o', 10: 's--'}  # plotting styles for different gels
-    meas_col = ['m', 'c']  # colors for different measurements
+    gel_styles = {6: 'o-', 10: 's-'}  # plotting styles for different gels
+    meas_col = ['r', 'm', 'b', 'c']  # colors for different measurements
     if xscale in 'log':  # share x-axis
         share_x = False
     else:
@@ -284,18 +284,22 @@ def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, dscale='linear'
     fig.text(0.33, 0.92, 'B', fontsize='xx-large', weight='extra bold')
     fig.text(0.67, 0.92, 'C', fontsize='xx-large', weight='extra bold')
 
-    # plot diffusivities first
+    # plot data in three different panels
     for ax, dat, ylab in zip(axes, [D_sol, D_gel, dF],
                              ['$D_{\\text{sol}}$ [$\mu$m$^2$/s]',
                               '$D_{\\text{gel}}$ [$\mu$m$^2$/s]',
                               '$\Delta F$ [$k_{\\text{B}}T$]']):
-        for d, dex, col in zip(dat, dextrans, meas_col):
+        for mes, col in zip(dat.values(), meas_col):
             for g, mfcs in zip(gels, [col, 'white']):
-                ax.errorbar(dex[g], d[g][:, 0], d[g][:, 1],
+                dextrns = list(mes[g].keys())
+                data = np.array(list(mes[g].values()))
+                ax.errorbar(dextrns, data[:, 0], data[:, 1],
                             fmt=col+gel_styles[g], mfc=mfcs)
                 ax.set_xticks([4, 10, 20, 40, 60, 70])
                 ax.set_ylabel(ylab)
                 ax.set_xlabel('$M_{\\text{dex}}$ [kDa]')
+    # plot experimental data
+    exp_plt = axes[0].plot(exp_data[:, 0], exp_data[:, 1], 'k^-', zorder=10)
 
     # setting diffusivity yscale
     for ax in axes[:-1]:
@@ -303,18 +307,22 @@ def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, dscale='linear'
         ax.set_xscale(xscale)
 
     # dummy plots for legend
+    n_measurements = len(D_sol)
     plts = [[plt.plot([None], '%s%s' % (gel_styles[g], col), mfc=g_mfc)
              for g, g_mfc in zip(gels, [col, 'white'])]
-            for col in meas_col]
-    leg1 = axes[0].legend([p[0] for p in plts[0]],
-                          ['$M_{\\text{gel}}$ = %d kDa' % g for g in gels],
-                          frameon=False, title='\\underline{Measurement 2}', loc=locs_dLegend[0],
+            for col in meas_col[:n_measurements]]
+    leg1 = axes[0].legend([exp_plt[0]], ['experiment'],
+                          frameon=False, loc=locs_dLegend[-1],
                           fontsize='small', markerscale=0.75, handlelength=1.2)
-    axes[0].legend([p[0] for p in plts[1]],
-                   ['$M_{\\text{gel}}$ = %d kDa' % g for g in gels],
-                   frameon=False, title='\\underline{Measurement 3}', loc=locs_dLegend[1],
-                   fontsize='small', markerscale=0.75, handlelength=1.2)
+    axes[0].legend([p[0][0] for p in plts],
+                   ['nbr. %i' % (i+1) for i in range(n_measurements)],
+                   frameon=False, loc=locs_dLegend[0], title='\\textit{Measurements:}',
+                   fontsize='small', markerscale=0.75, handlelength=1.2, ncol=2)
     axes[0].add_artist(leg1)
+    axes[1].legend([p[0] for p in plts[-1]],
+                   ['$M_{\\text{gel}}$ = %d kDa' % g for g in gels],
+                   frameon=False, loc=locs_dLegend[1],
+                   fontsize='small', markerscale=0.75, handlelength=1.2)
 
     # for double column figures in acs style format
     w_double = 7  # inch size for width of double column figure for ACS journals
@@ -323,7 +331,7 @@ def figure_results(gels, dextrans, D_sol, D_gel, dF, save=False, dscale='linear'
     fig.tight_layout(pad=0.5, w_pad=0.55)
 
     if save:
-        plt.savefig(savePath+'/%s.eps' % name)
+        plt.savefig(savePath+'/%s.pdf' % name)
     else:
         plt.show()
 
@@ -371,7 +379,7 @@ def figure_theory(r_h, D_sol_exp, D_gel_exp, dF_exp, D_ratio_theo, K_theo,
     fig.tight_layout(pad=0.5, w_pad=0.55)
 
     if save:
-        plt.savefig(savePath+'/theory_comparison.eps')
+        plt.savefig(savePath+'/theory_comparison.pdf')
     else:
         plt.show()
 
@@ -399,7 +407,7 @@ def figure_amount_time(avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp,
             plt.legend([gel_e[0], gel_t[0]], ['experiment', 'theory'], frameon=False)
             plt.gca().add_artist(leg1)
             if save:
-                plt.savefig(savePath+'/gel_%i_dex%i_penetration.eps' % (g, dex))
+                plt.savefig(savePath+'/gel_%i_dex%i_penetration.pdf' % (g, dex))
             else:
                 plt.show()
 
@@ -468,14 +476,17 @@ gels = [6, 10]  # molecular weight of the analyzed gels [kDa]
 # previous batch
 dextrans_1 = {6: [4, 10, 20], 10: [4, 10]}  # molecular weight of analyzed dextrans for the different gels
 dextrans_2 = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed dextrans for the different gels
-dextrans_3 = {6: [4, 20, 40, 70], 10: [4, 20, 40, 70]}  # molecular weight of analyzed dextrans for the different gels
+dextrans_3 = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed dextrans for the different gels
+dextrans_4 = {6: [4, 40, 70], 10: [4, 20, 40, 70]}  # molecular weight of analyzed dextrans for the different gels
 dt = {g: {4: 10, 20: 10, 40: 10, 70: 30} for g in gels}  # new time discretization
 home = '/Users/woldeaman/'  # change home directory accordingly
 path_to_data_1 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/ComputedData/'
-path_to_data_2 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/'
-path_to_data_3 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/7.Batch/ComputedData/'
-measurements = [path_to_data_1, path_to_data_2, path_to_data_3]  # gather paths for different measurements
-dextrans_compt = [dextrans_1, dextrans_2, dextrans_3]
+path_to_data_2 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/5.Batch/ComputedData/raw_profiles/'
+path_to_data_3 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/'
+path_to_data_4 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/7.Batch/ComputedData/'
+path_exp = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/fcs_diff_sol.txt'  # path to FCS measurements
+measurements = [path_to_data_1, path_to_data_2, path_to_data_3, path_to_data_4]  # gather paths for different measurements
+dextrans_compt = [dextrans_1, dextrans_2, dextrans_3, dextrans_4]
 save_path = home+'/Desktop'  # by default save on Desktop
 ##########################################################################
 
@@ -483,47 +494,69 @@ save_path = home+'/Desktop'  # by default save on Desktop
 ###############
 #  MAIN LOOP  #
 ##########################################################################
-# read fit data
-D_sol, D_gel, dF, t_sig, d_sig, scalings = [], [], [], [], [], []
-for mes, dex in zip(measurements, dextrans_compt):  # gather data from different measurements
-    d_sol, d_gel, df, t_s, d_s, scal = read_results(mes, dex)
-    D_sol.append(d_sol)
-    D_gel.append(d_gel)
-    dF.append(df)
-    t_sig.append(t_s)
-    d_sig.append(d_s)
-    scalings.append(scal)
-
-# read discretizations for analysis
-discretizations, c_exps, z_vectors = discretizations_and_initial_profiles(path_to_data_3, dextrans_3)
-
-# compute time resolved average concentration
-(avg_bulk_theo, avg_trans_theo,
- avg_gel_theo, avg_gel_exp, avg_trans_exp) = compute_amount(discretizations, z_vectors, c_exps, scalings[2],
-                                                            D_sol[2], D_gel[2], dF[2], t_sig[2], d_sig[2], dextrans=dextrans_3, dt=dt)
-
-# computing theoretical data
-r_h, r_pore_fit, K_theo, d_ratio_theo = fit_theory(dF)
-
 # plot data
 figure_explanation(save=True, savePath=save_path)
-# example = [10, 10]  # previous batch
-example = [10, 20]
-example_dt = 10
-figure_c_init(discretizations[example[0]][example[1]], c_exps[example[0]][example[1]][0], save=True, savePath=save_path)
-figure_scalings(z_vectors[example[0]][example[1]], c_exps[example[0]][example[1]],
-                np.arange(0, len(c_exps[example[0]][example[1]])*example_dt, example_dt), scalings[example[0]][example[1]], save=True, savePath=save_path)
-figure_results(gels, dextrans_compt, D_sol, D_gel, dF, save=True, savePath=save_path)
-# log plot figure
-figure_results(gels, dextrans_compt[1:], D_sol[1:], D_gel[1:], dF[1:], save=True, savePath=save_path, dscale='log', xscale='log',
-               locs_dLegend=['upper right', 'lower left'], name='DF_results_log')
-figure_amount_time(avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp, avg_trans_exp, dextrans_3, save=True, savePath=save_path)
-figure_theory(r_h, D_sol, D_gel, dF, d_ratio_theo, K_theo, save=True, savePath=save_path)
 
+# read fit data
+D_sol, D_gel, dF, t_sig, d_sig, scalings = {}, {}, {}, {}, {}, {}
+for idx, dex in zip(enumerate(measurements), dextrans_compt):  # gather data from different measurements
+    i, mes = idx[0], idx[1]
+    (D_sol[i], D_gel[i], dF[i],
+     t_sig[i], d_sig[i], scalings[i]) = read_results(mes, dex)
+    # read discretizations for analysis
+    # disc, c_ex, z_vec = discretizations_and_initial_profiles(mes, dextrans_compt[i])
 
-t_max = 12000  # max video time for dextrans in seconds
+    # compute time resolved average concentration
+    # (avg_bulk_theo, avg_trans_theo,
+    #  avg_gel_theo, avg_gel_exp, avg_trans_exp) = compute_amount(disc, z_vec, c_ex, scalings[i],
+    #                                                             D_sol[i], D_gel[i], dF[i], t_sig[i], d_sig[i],
+    #                                                             dextrans=dextrans_compt[i], dt=dt)
+    # # computing theoretical data
+    # r_h, r_pore_fit, K_theo, d_ratio_theo = fit_theory(dF[i])
+    # figure_theory(r_h, D_sol[i], D_gel[i], dF[i], d_ratio_theo,
+    #               K_theo, save=True, savePath=save_path)
+
+    # example = [10, 10]  # previous batch
+    # example = [10, 20]
+    # example_dt = 10
+    # figure_c_init(disc[example[0]][example[1]], c_ex[example[0]][example[1]][0], save=True, savePath=save_path)
+    # figure_scalings(z_vec[example[0]][example[1]], c_ex[example[0]][example[1]],
+    #                 np.arange(0, len(c_ex[example[0]][example[1]])*example_dt, example_dt),
+    #                 scalings[example[0]][example[1]], save=True, savePath=save_path)
+    # figure_amount_time(avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp,
+    #                    avg_trans_exp, dextrans_compt[i], save=True, savePath=save_path)
+    # t_max = 12000  # max video time for dextrans in seconds
+    # for g in gels:
+    #     for i, dex in enumerate(dextrans_2[g]):
+    #         make_animation(disc[g][dex], z_vec[g][dex], c_ex[g][dex][0], D_sol[g][i, 0],
+    #                        D_gel[g][i, 0], dF[g][i, 0], t_sig[g][i, 0], d_sig[g][i, 0], t_max,
+    #                        name='gel%i_dex%i' % (g, dex), savePath=save_path)
+
+# read experimental data
+exp_data = np.loadtxt(path_exp, encoding='utf-8')
+# list of performed measurments for each detran
+dex_measurements = {d: {g: [i if d in D_sol[i][g].keys() else None for i in range(len(D_sol))]
+                        for g in gels} for d in [4, 10, 20, 40, 70]}
+avg_dsol, avg_dgel, avg_df = {}, {}, {}
 for g in gels:
-    for i, dex in enumerate(dextrans_2[g]):
-        make_animation(discretizations[g][dex], z_vectors[g][dex], c_exps[g][dex][0], D_sol[g][i, 0],
-                       D_gel[g][i, 0], dF[g][i, 0], t_sig[g][i, 0], d_sig[g][i, 0], t_max,
-                       name='gel%i_dex%i' % (g, dex), savePath=save_path)
+    avg_dsol[g], avg_dgel[g], avg_df[g] = {}, {}, {}
+    for dex in [4, 10, 20, 40, 70]:
+        for dat, avg in zip([D_sol, D_gel, dF], [avg_dsol[g], avg_dgel[g], avg_df[g]]):
+            mes = np.array([D[g][dex][0] if i in dex_measurements[dex][g] else None
+                            for i, D in enumerate(dat.values())])
+            mes = mes[mes != np.array(None)]  # kick out Nones
+            avg[dex] = np.array([mes.mean(), mes.std()])
+
+figure_results(exp_data[:-1, :], gels, D_sol, D_gel, dF, save=True, savePath=save_path)
+# log plot figure
+figure_results(exp_data[:-1, :], gels, D_sol, D_gel, dF, save=True,
+               savePath=save_path, dscale='log', xscale='log',
+               locs_dLegend=['lower left', 'lower left', 'upper right'],
+               name='DF_results_log')
+# plot averaged data
+figure_results(exp_data[:-1, :], gels, {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
+               save=True, savePath=save_path, name='avg_data')
+figure_results(exp_data[:-1, :], gels, {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
+               dscale='log', xscale='log', save=True, savePath=save_path,
+               locs_dLegend=['lower left', 'lower left', 'center left'],
+               name='avg_data_log')
