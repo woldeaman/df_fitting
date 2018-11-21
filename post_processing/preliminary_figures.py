@@ -1,4 +1,4 @@
-pdf# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """Analyse D and F results of fits."""
 import numpy as np
 import pandas as pd
