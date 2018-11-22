@@ -547,6 +547,10 @@ for g in gels:
             mes = mes[mes != np.array(None)]  # kick out Nones
             avg[dex] = np.array([mes.mean(), mes.std()])
 
+D_col = 433  # D of FITC dye
+factors = np.array([0.55, 0.19, 0.58, 0.17, 0.46, 0.32])
+# computed bulk diffusivities accounting for FITCS D_sol
+adjusted_exp = np.c_[exp_data[:, 0], factors*D_col+exp_data[:, 1]]
 figure_results(exp_data[:-1, :], gels, D_sol, D_gel, dF, save=True, savePath=save_path)
 # log plot figure
 figure_results(exp_data[:-1, :], gels, D_sol, D_gel, dF, save=True,
@@ -557,6 +561,10 @@ figure_results(exp_data[:-1, :], gels, D_sol, D_gel, dF, save=True,
 figure_results(exp_data[:-1, :], gels, {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
                save=True, savePath=save_path, name='avg_data')
 figure_results(exp_data[:-1, :], gels, {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
+               dscale='log', xscale='log', save=True, savePath=save_path,
+               locs_dLegend=['lower left', 'lower left', 'center left'],
+               name='avg_data_log')
+figure_results(adjusted_exp[:-1, :], gels, {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
                dscale='log', xscale='log', save=True, savePath=save_path,
                locs_dLegend=['lower left', 'lower left', 'center left'],
                name='avg_data_log')
