@@ -484,7 +484,7 @@ path_to_data_1 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batc
 path_to_data_2 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/5.Batch/ComputedData/raw_profiles/'
 path_to_data_3 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/'
 path_to_data_4 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/7.Batch/ComputedData/'
-path_exp = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/fcs_diff_sol.txt'  # path to FCS measurements
+path_exp = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/FCS_data/FCS_data.txt'  # path to FCS measurements
 measurements = [path_to_data_1, path_to_data_2, path_to_data_3, path_to_data_4]  # gather paths for different measurements
 dextrans_compt = [dextrans_1, dextrans_2, dextrans_3, dextrans_4]
 save_path = home+'/Desktop'  # by default save on Desktop
@@ -495,7 +495,7 @@ save_path = home+'/Desktop'  # by default save on Desktop
 #  MAIN LOOP  #
 ##########################################################################
 # plot data
-figure_explanation(save=True, savePath=save_path)
+# figure_explanation(save=True, savePath=save_path)
 
 # read fit data
 D_sol, D_gel, dF, t_sig, d_sig, scalings = {}, {}, {}, {}, {}, {}
@@ -547,10 +547,7 @@ for g in gels:
             mes = mes[mes != np.array(None)]  # kick out Nones
             avg[dex] = np.array([mes.mean(), mes.std()])
 
-D_col = 433  # D of FITC dye
-factors = np.array([0.55, 0.19, 0.58, 0.17, 0.46, 0.32])
 # computed bulk diffusivities accounting for FITCS D_sol
-adjusted_exp = np.c_[exp_data[:, 0], factors*D_col+exp_data[:, 1]]
 figure_results(exp_data[:-1, :], gels, D_sol, D_gel, dF, save=True, savePath=save_path)
 # log plot figure
 figure_results(exp_data[:-1, :], gels, D_sol, D_gel, dF, save=True,
@@ -558,13 +555,10 @@ figure_results(exp_data[:-1, :], gels, D_sol, D_gel, dF, save=True,
                locs_dLegend=['lower left', 'lower left', 'upper right'],
                name='DF_results_log')
 # plot averaged data
+# exp_data = np.loadtxt('/Users/woldeaman/Desktop/two_comp_fit.txt')
 figure_results(exp_data[:-1, :], gels, {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
                save=True, savePath=save_path, name='avg_data')
 figure_results(exp_data[:-1, :], gels, {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
-               dscale='log', xscale='log', save=True, savePath=save_path,
-               locs_dLegend=['lower left', 'lower left', 'center left'],
-               name='avg_data_log')
-figure_results(adjusted_exp[:-1, :], gels, {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
                dscale='log', xscale='log', save=True, savePath=save_path,
                locs_dLegend=['lower left', 'lower left', 'center left'],
                name='avg_data_log')
