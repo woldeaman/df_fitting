@@ -385,7 +385,7 @@ def main():
     n_profiles = cc[0, :].size-1  # number of profiles without c(t=0)
 
     dxx_dist, dxx_width = fp.discretization_Block(xx)  # get variable discretization
-    cc = fp.build_zero_profile(cc)  # build t=0 profile
+    # cc = fp.build_zero_profile(cc)  # build t=0 profile  NOTE: now using step profile
     # set up optimization
     params = 2  # only fit here Dsol, Fsol and Dmuc, Fmuc
     bnds, inits = initialize_optimization(runs, params, n_profiles, xx)
