@@ -49,12 +49,17 @@ def save_data(xx, dxx_width, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_t
                        'error from analysis\n'
                        'cloumn1: diffusivity [micro_m^2/s]\n'
                        'cloumn2: free energy [k_BT]'))
+    # saving fitted dt_0
+    np.savetxt(savePath+'dt_0.txt', np.c_[best_params[-1], avg_params[-1], std_params[-1]],
+               delimiter=',',
+               header=('Fitted dt_0: best, average, std_dev\n'))
 
     # saving Error of top 1% of runs
     np.savetxt(savePath+'minError.txt', errors, delimiter=',',
                header=(('Minimal error averaged over %i/%i runs, ' % (errors.size, nbr_runs)) +
                        ('%i%% deviation from minimal error included.') % (crit_err*100)))
     # saving fitted average bulk concentrations
+    print(len(c_bulk_mean), len(c_bulk_std), len(scalings_mean), len(scalings_std))
     np.savetxt(savePath+'scalings_avg.txt', np.c_[c_bulk_mean, c_bulk_std, scalings_mean, scalings_std],
                delimiter=',',
                header=('Fitted bulk concentration, averaged over all runs.\n'
@@ -150,9 +155,8 @@ def average_data(result, xx, cc, crit_err):
                     for which results will be included in average
     """
     # used to later compute normalized error
-    n_profiles = len(cc)  # number of profiles
-    bins = cc[1].size  # number of bins
-    combis = n_profiles-1  # number of combinations for different c-profiles
+    combis = cc[0, :].size  # number of profiles
+    bins = cc[0, :].size+6  # number of bins
 
     # loading error values, factor two, because of cost function definition
     key_list = np.array(list(result.root._v_children.keys()))  # key list to easily iterate over
@@ -240,15 +244,17 @@ def initialize_optimization(runs, params, n_profiles, xx, DMax=1000, FMax=20):
     # bounds for scaling factors for each profile
     bnds_scale_up = np.ones(n_profiles)*100  # setting this beetwen 0-100
     bnds_scale_low = np.zeros(n_profiles)
+    bnds_dt_0_low, bnds_dt_0_up = np.zeros(1), np.ones(1)*1000  # fit dt_0 between 0-1000s
     # setting start values
     f_init = np.zeros(params)
     d_init = (np.random.rand(runs, params)*DMax)  # randomly choose D
     td_init = np.array([50, dx*3])  # order is [t, d], set t initially to 50 µm
     scale_init = np.ones(n_profiles)  # initially no scaling
+    dt_0_init = np.ones(1)*10  # fitting first dt_0, assuming 10s
     # storing everything together
-    bnds = (np.concatenate((bnds_d_low, bnds_f_low, bnds_td_low, bnds_scale_low)),
-            np.concatenate((bnds_d_up, bnds_f_up, bnds_td_up, bnds_scale_up)))
-    inits = [np.concatenate((d, f_init, td_init, scale_init)) for d in d_init]
+    bnds = (np.concatenate((bnds_d_low, bnds_f_low, bnds_td_low, bnds_scale_low, bnds_dt_0_low)),
+            np.concatenate((bnds_d_up, bnds_f_up, bnds_td_up, bnds_scale_up, bnds_dt_0_up)))
+    inits = [np.concatenate((d, f_init, td_init, scale_init, dt_0_init)) for d in d_init]
 
     return bnds, inits
 
@@ -286,31 +292,46 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
     (best_results, averages, stdevs, F_best, D_best, t_best, d_best,
      F_mean, D_mean, t_mean, d_mean, F_std, D_std, error) = average_data(result, xx, cc, crit_err)
     # fitted values for re-scaling concentration profiles
-    scalings_mean, scalings_std, scalings_best = averages[6:], stdevs[6:], best_results[6:]
+    scalings_mean, scalings_std, scalings_best = averages[6:-1], stdevs[6:-1], best_results[6:-1]
+    dt_0_best = best_results[-1]  # NOTE: using best dt_0 for computations
+    cc_lst = compute_step_c0(cc, xx, t_best)  # NOTE: using also best fitted t_sig for c0 computation
+    tt_new = np.insert(tt+dt_0_best, 0, 0)  # shift all times by dt_0, then t_0 = 0
 
     # computing rate matrix from best and averaged results
     W_best = fp.WMatrixVar(D_best, F_best, start=4, end=None, deltaXX=dxx_dist, con=True)
     W_mean = fp.WMatrixVar(D_mean, F_mean, start=4, end=None, deltaXX=dxx_dist, con=True)
     # computing concentration profiles
-    tt_ext = np.append(tt[:-1], np.arange(tt[-1], tt[-1]*7))  # extend to long time limit
-    cc_theo_best = np.array([fp.calcC(cc[0], (t-tt[0]), W=W_best) for t in tt_ext]).T
-    cc_theo_mean = np.array([fp.calcC(cc[0], (t-tt[0]), W=W_mean) for t in tt_ext]).T
+    tt_ext = np.append(tt_new[:-1], np.arange(tt_new[-1], tt_new[-1]*7))  # extend to long time limit
+    cc_theo_best = np.array([fp.calcC(cc_lst[0], (t-tt_new[0]), W=W_best) for t in tt_ext]).T
+    cc_theo_mean = np.array([fp.calcC(cc_lst[0], (t-tt_new[0]), W=W_mean) for t in tt_ext]).T
 
     # compute re-scaled concentration profiles
-    cc_best, cc_mean = [cc[0]], [cc[0]]
-    for c_b, c_m, c_og in zip(scalings_best, scalings_mean, cc[1:]):
+    cc_best, cc_mean = [cc_lst[0]], [cc_lst[0]]
+    for c_b, c_m, c_og in zip(scalings_best, scalings_mean, cc_lst[1:]):
         cc_best.append(c_og*c_b)
         cc_mean.append(c_og*c_m)
     # compute fitted average bulk concentration
     c_bulk_best = fp.compute_avg_c_bulk(cc_best, xx, dxx_width)
     c_bulk_mean = fp.compute_avg_c_bulk(cc_mean, xx, dxx_width)
     # error from gauß error propagation
-    c_bulk_std = fp.compute_c_bulk_stdev(cc, scalings_std, xx)
+    c_bulk_std = fp.compute_c_bulk_stdev(cc_lst, scalings_std, xx)
 
     save_data(xx, dxx_width, cc_best, cc_mean, cc_theo_best, cc_theo_mean, tt, tt_ext,
               error, t_best, t_mean, best_results, averages, stdevs, D_mean, D_best,
               F_mean, F_best, D_std, F_std, scalings_mean, scalings_std, scalings_best,
               c_bulk_mean, c_bulk_std, c_bulk_best, result.root._v_nchildren, alpha, crit_err, savePath)
+
+
+def compute_step_c0(cc, xx, t_sig, bins_bulk=6):
+    """Compute initial step profile."""
+    # compute c(t=0) box profile for current t_sig position
+    dx = abs(xx[1]-xx[0])
+    bins = xx.size  # bins in measured area
+    xx_t = int(t_sig//dx)  # bin position of interface
+    c0 = np.concatenate((np.ones(xx_t+bins_bulk), np.zeros(bins-xx_t)))
+    cc_lst = [c0] + [cc[:, i] for i in range(1, cc[0, :].size)]  # now with c0
+
+    return cc_lst
 
 
 def regularization_term(d, f, t_sig, d_sig, scalings, alpha=0):
@@ -333,10 +354,11 @@ def regularization_term(d, f, t_sig, d_sig, scalings, alpha=0):
 def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, alpha, check=False):
     """Compute residuals for non-linear optimization."""
     # separate fit parameters accordingly
-    d = parameters[:2]
-    f = parameters[2:4]
+    d, f = parameters[:2], parameters[2:4]
     t_sig, d_sig = parameters[4], parameters[5]
-    scalings = parameters[6:]
+    scalings = parameters[6:-1]
+    dt_0 = parameters[-1]  # fit parameter for time to initial profile
+    tt_new = np.insert(tt+dt_0, 0, 0)  # shift all times by dt_0, then t_0 = 0
 
     # compute sigmoidal D, F profiles
     D = np.array([fp.sigmoidalDF(d, t_sig, d_sig, x) for x in xx])
@@ -346,13 +368,16 @@ def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, alpha, check=False):
     # computing WMatrix, start smaller than 6, because D, F is const. only there
     W = fp.WMatrixVar(D, F, start=4, end=None, deltaXX=dxx_dist, con=True)
 
+    # compute c(t=0) box profile for current t_sig position
+    cc_lst = compute_step_c0(cc, xx, t_sig)
+
     if check:  # checking for conservation of concentration
-        cross_checking(W, cc, tt, dxx_width, dxx_dist)
+        cross_checking(W, cc_lst, tt_new, dxx_width, dxx_dist)
 
     # compute numerical profiles
-    cc_theo = [fp.calcC(cc[0], t=(t-tt[0]), W=W) for t in tt[1:]]
+    cc_theo = [fp.calcC(cc_lst[0], t=(t-tt_new[0]), W=W) for t in tt_new[1:]]
     # re-scale concentration profiles with fit parameters
-    cc_norm = [c*norm for c, norm in zip(cc[1:], scalings)]
+    cc_norm = [c*norm for c, norm in zip(cc_lst[1:], scalings)]
 
     # compute residual vector and reshape into one long vector
     RR = np.array([c_exp - c_num[6:] for c_exp, c_num in zip(cc_norm, cc_theo)]).T
@@ -382,10 +407,9 @@ def main():
     """Set up optimization and run it."""
     # reading input and setting up analysis
     verbosity, runs, ana, xx, cc, tt, alpha = io.startUp_slim()
-    n_profiles = cc[0, :].size-1  # number of profiles without c(t=0)
+    n_profiles = cc[0, :].size  # number of profiles without c(t=0)
 
     dxx_dist, dxx_width = fp.discretization_Block(xx)  # get variable discretization
-    # cc = fp.build_zero_profile(cc)  # build t=0 profile  NOTE: now using step profile
     # set up optimization
     params = 2  # only fit here Dsol, Fsol and Dmuc, Fmuc
     bnds, inits = initialize_optimization(runs, params, n_profiles, xx)

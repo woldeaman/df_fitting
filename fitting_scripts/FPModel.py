@@ -15,7 +15,7 @@ def compute_c_bulk_stdev(cc_original, scalings_std, xx, x_tot=1780):
     length_bulk = x_tot - np.max(xx)  # length of bulk phase
     # error from gauß error propagation
     c_bulk_std = [std*(dx*np.sum(c_og))/length_bulk
-                  for std, c_og in zip(scalings_std, cc_original[1:])]
+                  for std, c_og in zip(scalings_std, cc_original)]
     return c_bulk_std
 
 
@@ -26,7 +26,7 @@ def compute_avg_c_bulk(cc_scaled, xx, dxx_width, x_tot=1780):
     c_tot = np.sum(dxx_width*cc_scaled[0])  # total amount from c(t=0) profile
 
     # compute total amount of concentration for profiles
-    c_amount = [dx * np.sum(c) for c in cc_scaled[1:]]
+    c_amount = [dx * np.sum(c) for c in cc_scaled]
     c_bulk_avg = [(c_tot - c_am)/length_bulk for c_am in c_amount]
 
     return c_bulk_avg
@@ -365,7 +365,9 @@ def calcC(cc, t, W=None, T=None, bc='reflective', W10=None, c0=None, Qb=None,
             Qb = np.dot(Q, b)
 
     if bc == 'reflective':
-        return np.dot(la.matrix_power(T, t), cc)
+        cc_theo = np.dot(al.fractional_matrix_power(T, t), cc)
     elif bc == 'open1side':
-        return np.dot(la.matrix_power(T, t), cc) + np.dot(
-            la.matrix_power(T, t) - np.eye(dim), Qb)
+        cc_theo = np.dot(al.fractional_matrix_power(T, t), cc) + np.dot(
+            al.fractional_matrix_power(T, t) - np.eye(dim), Qb)
+
+    return cc_theo.real  # BUG: matrix power could return complex values...
