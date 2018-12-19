@@ -321,7 +321,7 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
               F_mean, F_best, D_std, F_std, scalings_mean, scalings_std, scalings_best,
               c_bulk_mean, c_bulk_std, c_bulk_best, result.root._v_nchildren, alpha, crit_err, savePath)
 
-
+# TODO: make this a sigmoid profile !
 def compute_step_c0(cc, xx, t_sig, bins_bulk=6):
     """Compute initial step profile."""
     # compute c(t=0) box profile for current t_sig position
