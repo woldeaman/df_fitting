@@ -294,7 +294,7 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
     # fitted values for re-scaling concentration profiles
     scalings_mean, scalings_std, scalings_best = averages[6:-1], stdevs[6:-1], best_results[6:-1]
     dt_0_best = best_results[-1]  # NOTE: using best dt_0 for computations
-    cc_lst = compute_step_c0(cc, xx, t_best)  # NOTE: using also best fitted t_sig for c0 computation
+    cc_lst = compute_c0_profile(cc, xx, t_best, d_best)  # NOTE: using also best fitted t_sig for c0 computation
     tt_new = np.insert(tt+dt_0_best, 0, 0)  # shift all times by dt_0, then t_0 = 0
 
     # computing rate matrix from best and averaged results
@@ -321,14 +321,11 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
               F_mean, F_best, D_std, F_std, scalings_mean, scalings_std, scalings_best,
               c_bulk_mean, c_bulk_std, c_bulk_best, result.root._v_nchildren, alpha, crit_err, savePath)
 
-# TODO: make this a sigmoid profile !
-def compute_step_c0(cc, xx, t_sig, bins_bulk=6):
-    """Compute initial step profile."""
-    # compute c(t=0) box profile for current t_sig position
-    dx = abs(xx[1]-xx[0])
-    bins = xx.size  # bins in measured area
-    xx_t = int(t_sig//dx)  # bin position of interface
-    c0 = np.concatenate((np.ones(xx_t+bins_bulk), np.zeros(bins-xx_t)))
+
+def compute_c0_profile(cc, xx, t_sig, d_sig, bins_bulk=6):
+    """Compute initial sigmoid profile."""
+    c0_pre = np.array([fp.sigmoidalDF([1, 0], t_sig, d_sig, x) for x in xx])  # compute sigmoid profile
+    c0 = np.concatenate((np.ones(bins_bulk), c0_pre))
     cc_lst = [c0] + [cc[:, i] for i in range(1, cc[0, :].size)]  # now with c0
 
     return cc_lst
@@ -369,7 +366,7 @@ def resFun(parameters, xx, cc, tt, dxx_dist, dxx_width, alpha, check=False):
     W = fp.WMatrixVar(D, F, start=4, end=None, deltaXX=dxx_dist, con=True)
 
     # compute c(t=0) box profile for current t_sig position
-    cc_lst = compute_step_c0(cc, xx, t_sig)
+    cc_lst = compute_c0_profile(cc, xx, t_sig, d_sig)
 
     if check:  # checking for conservation of concentration
         cross_checking(W, cc_lst, tt_new, dxx_width, dxx_dist)
