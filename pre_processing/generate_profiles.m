@@ -1,10 +1,10 @@
 % exemplary script showing pre-processing steps of microscopy data
 clear;
 
-data_path='/Users/woldeaman/Downloads/180821-ah206_180821-ah206-lsg d4/'; % supply path to data
-filename='180821-ah206_180821-ah206-lsg d4';  % supply filenames here
+data_path='/Users/woldeaman/Downloads/190228-ah235-fraktionen PD10_g6-d10-I kein gel_lsg/'; % supply path to data
+filename='190228-ah235-fraktionen PD10_g6-d10-I kein gel_lsg';  % supply filenames here
 z_max=44;  % number of recorde z-stacks
-t_max=9;  % number of recorded time points
+t_max=149;  % number of recorded time points
 
 int=[];
 
