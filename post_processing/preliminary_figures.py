@@ -2,6 +2,7 @@
 """Analyse D and F results of fits."""
 import numpy as np
 import pandas as pd
+import re
 import fitting_scripts.FPModel as fp
 import scipy.special as sp
 import matplotlib.pyplot as plt
@@ -26,7 +27,7 @@ def compute_amount(discretizations, z_vectors, c_exps, scalings, d_sols, d_gels,
     for g in gels:
         avg_gel_theo[g], avg_trans_theo[g], avg_bulk_theo[g] = {}, {}, {}
         avg_gel_exp[g], avg_trans_exp[g], avg_bulk_exp[g] = {}, {}, {}
-        for dex in dt[g].keys():
+        for dex in dextrans[g]:
             D = np.array([fp.sigmoidalDF([d_sols[g][dex][0], d_gels[g][dex][0]], t_sig[g][dex][0], d_sig[g][dex][0], z)
                           for z in z_vectors[g][dex]])
             F = np.array([fp.sigmoidalDF([0, delta_fs[g][dex][0]], t_sig[g][dex][0], d_sig[g][dex][0], z) for z in z_vectors[g][dex]])
@@ -290,7 +291,7 @@ def figure_results(exp_data, gels, D_sol, D_gel, dF, save=False, dscale='linear'
                               '$\Delta F$ [$k_{\\text{B}}T$]']):
         for mes, col in zip(dat.values(), meas_col):
             for g, mfcs in zip(gels, [col, 'white']):
-                dextrns = list(mes[g].keys())
+                dextrns = [int(re.findall(r"\d+", dx)[0]) for dx in mes[g].keys()]
                 data = np.array(list(mes[g].values()))
                 ax.errorbar(dextrns, data[:, 0], data[:, 1],
                             fmt=col+gel_styles[g], mfc=mfcs)
@@ -475,24 +476,23 @@ def make_animation(dx_dist, zz_exp, c_init, Dsol, Dgel, dF, t_sig, d_sig,
 gels = [6, 10]  # molecular weight of the analyzed gels [kDa]
 
 # previous batch
-dextrans_1 = {6: [4, 10, 20], 10: [4, 10]}  # molecular weight of analyzed dextrans for the different gels
-dextrans_2 = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed dextrans for the different gels
-dextrans_3 = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed dextrans for the different gels
-dextrans_4 = {6: [4, 40, 70], 10: [4, 20, 40, 70]}  # molecular weight of analyzed dextrans for the different gels
-dextrans_5 = {6: ['dex4', 'dex40', 'FITC'], 10: ['dex4', 'dex40', 'FITC'], 20: ['dex4', 'dex4_cut', 'dex40']}  # molecular weight of analyzed dextrans for the different gels
-dextrans_6 = {6: ['dex4', 'dex10', 'dex20', 'dex40'], 10: ['dex4', 'dex10', 'dex20', 'dex40']}  # molecular weight of analyzed dextrans for the different gels
+dextrans_4 = {6: [4, 10, 20], 10: [4, 10]}  # molecular weight of analyzed dextrans for the different gels
+dextrans_5 = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed dextrans for the different gels
+dextrans_6 = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed dextrans for the different gels
+dextrans_7 = {6: [4, 40, 70], 10: [4, 20, 40, 70]}  # molecular weight of analyzed dextrans for the different gels
+dextrans_8 = {6: ['dex4', 'dex40', 'FITC'], 10: ['dex4', 'dex40', 'FITC'], 20: ['dex4', 'dex4_cut', 'dex40']}  # molecular weight of analyzed dextrans for the different gels
+dextrans_8_plt = {6: ['dex4'], 10: ['dex4']}  # molecular weight of analyzed dextrans for the different gels
+dextrans_9 = {6: ['dex4', 'dex10', 'dex20', 'dex40'], 10: ['dex4', 'dex10', 'dex20', 'dex40'], 20: []}  # molecular weight of analyzed dextrans for the different gels
 # dt = {g: {4: 10, 20: 10, 40: 10, 70: 30} for g in gels}  # new time discretization
-dt = {g: {d: 10 for d in dextrans_6[g]} for g in gels}  # new time discretization
+dt = {g: {d: 10 for d in dextrans_9[g]} for g in gels}  # new time discretization
 home = '/Users/woldeaman/'  # change home directory accordingly
-path_to_data_1 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/ComputedData/'
-path_to_data_2 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/5.Batch/ComputedData/raw_profiles/'
-path_to_data_3 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/'
-path_to_data_4 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/7.Batch/ComputedData/'
-path_to_data_5 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/8.Batch/ComputedData/'
-path_to_data_6 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/9.Batch/ComputedData/'
+path_to_data_4 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/ComputedData/'
+path_to_data_5 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/5.Batch/ComputedData/raw_profiles/'
+path_to_data_6 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/'
+path_to_data_7 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/7.Batch/ComputedData/'
+path_to_data_8 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/8.Batch/ComputedData/'
+path_to_data_9 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/9.Batch/ComputedData/'
 path_exp = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/FCS_data/FCS_data.txt'  # path to FCS measurements
-measurements = [path_to_data_1, path_to_data_2, path_to_data_3, path_to_data_4]  # gather paths for different measurements
-dextrans_compt = [dextrans_1, dextrans_2, dextrans_3, dextrans_4]
 save_path = home+'/Desktop'  # by default save on Desktop
 ##########################################################################
 
@@ -502,8 +502,8 @@ save_path = home+'/Desktop'  # by default save on Desktop
 ##########################################################################
 # plot data
 # figure_explanation(save=True, savePath=save_path)
-dextrans_compt = [dextrans_6]
-measurements = [path_to_data_6]  # gather paths for different measurements
+dextrans_compt = [dextrans_8_plt, dextrans_9]
+measurements = [path_to_data_8, path_to_data_9]  # gather paths for different measurements
 
 # read fit data
 D_sol, D_gel, dF, t_sig, d_sig, scalings = {}, {}, {}, {}, {}, {}
@@ -516,10 +516,10 @@ for idx, dex in zip(enumerate(measurements), dextrans_compt):  # gather data fro
     disc, c_ex, z_vec = discretizations_and_initial_profiles(mes, dextrans_compt[i])
 
     # compute time resolved average concentration
-    (avg_bulk_theo, avg_trans_theo,
-     avg_gel_theo, avg_gel_exp, avg_trans_exp) = compute_amount(disc, z_vec, c_ex, scalings[i],
-                                                                D_sol[i], D_gel[i], dF[i], t_sig[i], d_sig[i],
-                                                                dextrans=dextrans_compt[i], dt=dt)
+    # (avg_bulk_theo, avg_trans_theo,
+    #  avg_gel_theo, avg_gel_exp, avg_trans_exp) = compute_amount(disc, z_vec, c_ex, scalings[i],
+    #                                                             D_sol[i], D_gel[i], dF[i], t_sig[i], d_sig[i],
+    #                                                             dextrans=dextrans_compt[i], dt=dt)
     # # computing theoretical data
     # r_h, r_pore_fit, K_theo, d_ratio_theo = fit_theory(dF[i])
     # figure_theory(r_h, D_sol[i], D_gel[i], dF[i], d_ratio_theo,
@@ -532,8 +532,8 @@ for idx, dex in zip(enumerate(measurements), dextrans_compt):  # gather data fro
     # figure_scalings(z_vec[example[0]][example[1]], c_ex[example[0]][example[1]],
     #                 np.arange(0, len(c_ex[example[0]][example[1]])*example_dt, example_dt),
     #                 scalings[example[0]][example[1]], save=True, savePath=save_path)
-    figure_amount_time(avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp,
-                       avg_trans_exp, dextrans_compt[i], save=True, savePath=save_path)
+    # figure_amount_time(avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp,
+    #                    avg_trans_exp, dextrans_compt[i], save=True, savePath=save_path)
     # t_max = 12000  # max video time for dextrans in seconds
     # for g in gels:
     #     for i, dex in enumerate(dextrans_2[g]):
@@ -554,12 +554,15 @@ for g in gels:
             mes = np.array([D[g][dex][0] if i in dex_measurements[dex][g] else None
                             for i, D in enumerate(dat.values())])
             mes = mes[mes != np.array(None)]  # kick out Nones
-            avg[dex] = np.array([mes.mean(), mes.std()])
+            if len(mes) > 0:
+                avg[dex] = np.array([mes.mean(), mes.std()])
 
 # computed bulk diffusivities accounting for FITCS D_sol
-figure_results(exp_data[:-1, :], gels, D_sol, D_gel, dF, save=True, savePath=save_path)
+
+exp_data[:-2, 0] = np.array([4, 10, 20, 40, 70])
+figure_results(exp_data[:-2, :], gels, D_sol, D_gel, dF, save=True, savePath=save_path)
 # log plot figure
-figure_results(exp_data[:-1, :], gels, D_sol, D_gel, dF, save=True,
+figure_results(exp_data[:-2, :], gels, D_sol, D_gel, dF, save=True,
                savePath=save_path, dscale='log', xscale='log',
                locs_dLegend=['lower left', 'lower left', 'upper right'],
                name='DF_results_log')
