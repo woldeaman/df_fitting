@@ -12,6 +12,7 @@ import functools as ft
 import mpltex  # for acs style figures
 import sys
 # TODO: script is written in a super hacky fashion, refurbish this at some point..
+# also save data from all runs in the repository
 
 
 #################################
