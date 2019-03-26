@@ -47,8 +47,8 @@ def plot_residuals(xx, residuals, tt, t_sig, save=False, savePath=os.getcwd(),
     x_t = np.round(t_sig/10).astype(int)
     err_blk = np.sqrt(np.sum([res[:x_t]**2 for res in residuals])/(len(residuals)*len(xx[:x_t])))
     err_gel = np.sqrt(np.sum([res[x_t:]**2 for res in residuals])/(len(residuals)*len(xx[x_t:])))
-    err_blk = "%i" % err_blk*1000 if not np.isnan(err_blk) else "$\\infty$"  # catch NaNs
-    err_gel = "%i" % err_gel*1000 if not np.isnan(err_gel) else "$\\infty$"
+    err_blk = "%i" % (err_blk*1000) if not np.isnan(err_blk) else "$\\infty$"  # catch NaNs
+    err_gel = "%i" % (err_gel*1000) if not np.isnan(err_gel) else "$\\infty$"
     err_gel_txt = "$\sigma_{\\text{gel}}$ = $\pm$%s$\cdot$10$^{-3}$" % (err_gel)
     err_blk_txt = "$\sigma_{\\text{sol}}$ = $\pm$%s$\cdot$10$^{-3}$" % (err_blk)
 
