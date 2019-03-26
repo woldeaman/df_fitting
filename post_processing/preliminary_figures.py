@@ -559,8 +559,7 @@ for g in gels:
                 avg[dex] = np.array([mes.mean(), mes.std()])
 
 # computed bulk diffusivities accounting for FITCS D_sol
-
-exp_data[:-2, 0] = np.array([4, 10, 20, 40, 70])
+exp_data[:-2, 0] = np.array([4, 10, 20, 40])
 figure_results(exp_data[:-2, :], gels, D_sol, D_gel, dF, save=True, savePath=save_path)
 # log plot figure
 figure_results(exp_data[:-2, :], gels, D_sol, D_gel, dF, save=True,
