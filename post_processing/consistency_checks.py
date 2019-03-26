@@ -47,8 +47,10 @@ def plot_residuals(xx, residuals, tt, t_sig, save=False, savePath=os.getcwd(),
     x_t = np.round(t_sig/10).astype(int)
     err_blk = np.sqrt(np.sum([res[:x_t]**2 for res in residuals])/(len(residuals)*len(xx[:x_t])))
     err_gel = np.sqrt(np.sum([res[x_t:]**2 for res in residuals])/(len(residuals)*len(xx[x_t:])))
-    err_gel_txt = "$\sigma_{\\text{gel}}$ = $\pm$%i$\cdot$10$^{-3}$" % (err_gel*1000)
-    err_blk_txt = "$\sigma_{\\text{sol}}$ = $\pm$%i$\cdot$10$^{-3}$" % (err_blk*1000)
+    err_blk = "%i" % err_blk*1000 if not np.isnan(err_blk) else "$\\infty$"  # catch NaNs
+    err_gel = "%i" % err_gel*1000 if not np.isnan(err_gel) else "$\\infty$"
+    err_gel_txt = "$\sigma_{\\text{gel}}$ = $\pm$%s$\cdot$10$^{-3}$" % (err_gel)
+    err_blk_txt = "$\sigma_{\\text{sol}}$ = $\pm$%s$\cdot$10$^{-3}$" % (err_blk)
 
     for res, col in zip(residuals, colors):  # plot residuals
         plt.plot(xx, res, 'o', color=col)
@@ -87,8 +89,8 @@ path = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/9.Bat
 ##########################################################################
 def main():
     gels = [6, 10]
-    dextrans = {6: ['dex4', 'dex10', 'dex20', 'dex40'],
-                10: ['dex4', 'dex10', 'dex20', 'dex40']}  # dextrans measured for each gel
+    dextrans = {6: ['dex4', 'dex10', 'dex20', 'dex20_cut', 'dex40'],
+                10: ['dex4', 'dex4_leaveLastTimes', 'dex10', 'dex10_cutLast', 'dex20', 'dex20_cutSolution', 'dex40']}  # dextrans measured for each gel
     # dt_setups = {g: {'dex4': 10, 'dex4_cut': 10, 'dex20': 10, 'dex40': 10, 'FITC': 10, 'dex70': 30} for g in gels}
     for g in gels:
         for d in dextrans[g]:
