@@ -89,8 +89,8 @@ path = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/9.Bat
 ##########################################################################
 def main():
     gels = [6, 10]
-    dextrans = {6: ['dex4', 'dex10', 'dex20', 'dex20_cut', 'dex40'],
-                10: ['dex4', 'dex4_leaveLastTimes', 'dex10', 'dex10_cutLast', 'dex20', 'dex20_cutSolution', 'dex40']}  # dextrans measured for each gel
+    dextrans = {6: ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'],
+                10: ['dex40']}  # dextrans measured for each gel
     # dt_setups = {g: {'dex4': 10, 'dex4_cut': 10, 'dex20': 10, 'dex40': 10, 'FITC': 10, 'dex70': 30} for g in gels}
     for g in gels:
         for d in dextrans[g]:
