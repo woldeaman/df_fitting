@@ -408,7 +408,7 @@ def figure_amount_time(avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp,
             plt.legend([gel_e[0], gel_t[0]], ['experiment', 'theory'], frameon=False)
             plt.gca().add_artist(leg1)
             if save:
-                plt.savefig(savePath+'/gel_%i_%s_penetration.pdf' % (g, dex))
+                plt.savefig(savePath+'/gel%i_%s_penetration.pdf' % (g, dex))
             else:
                 plt.show()
 
@@ -473,8 +473,8 @@ def make_animation(dx_dist, zz_exp, c_init, Dsol, Dgel, dF, t_sig, d_sig,
 #################
 #  ENVIRONMENT  #
 ##########################################################################
-# gels = [6, 10, 20]  # molecular weight of the analyzed gels [kDa]
-gels = [6, 10]  # molecular weight of the analyzed gels [kDa]
+gels = [0, 6, 10, 20]  # molecular weight of the analyzed gels [kDa]
+# gels = [6, 10]  # molecular weight of the analyzed gels [kDa]
 
 # previous batch
 dextrans_4 = {6: [4, 10, 20], 10: [4, 10]}  # molecular weight of analyzed dextrans for the different gels
@@ -482,18 +482,28 @@ dextrans_5 = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed d
 dextrans_6 = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed dextrans for the different gels
 dextrans_7 = {6: [4, 40, 70], 10: [4, 20, 40, 70]}  # molecular weight of analyzed dextrans for the different gels
 dextrans_8 = {6: ['dex4', 'dex40', 'FITC'], 10: ['dex4', 'dex40', 'FITC'], 20: ['dex4', 'dex4_cut', 'dex40']}  # molecular weight of analyzed dextrans for the different gels
-dextrans_8_plt = {6: ['dex4'], 10: ['dex4']}  # molecular weight of analyzed dextrans for the different gels
-dextrans_9 = {6: ['dex4', 'dex10', 'dex20', 'dex40'], 10: ['dex4', 'dex10', 'dex20', 'dex40'], 20: []}  # molecular weight of analyzed dextrans for the different gels
+dextrans_8_plt = {6: ['dex4'], 10: ['dex4'], 20: [], 0: []}  # molecular weight of analyzed dextrans for the different gels
+dextrans_9 = {6: ['dex4', 'dex10', 'dex20', 'dex40'],
+              0: ['dex4', 'dex10', 'dex20', 'dex40'], 20: []}  # molecular weight of analyzed dextrans for the different gels
+dextrans_10 = {6: ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'],
+               10: ['dex4', 'dex4_vol2', 'dex10', 'dex10_vol2', 'dex20', 'dex20_vol2', 'dex20_vol2_raw', 'dex40', 'dex40_raw', 'dex40_vol2'],
+               20: ['dex20', 'dex40']}  # dextrans measured for each gel
+dextrans_11 = {6: ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'],
+               10: ['dex4', 'dex4_vol2', 'dex10', 'dex10_vol2', 'dex20', 'dex20_vol2', 'dex20_vol2_raw', 'dex40', 'dex40_raw', 'dex40_vol2'],
+               20: ['dex20', 'dex40']}  # dextrans measured for each gel
+
+
 # dt = {g: {4: 10, 20: 10, 40: 10, 70: 30} for g in gels}  # new time discretization
-dt = {g: {d: 10 for d in dextrans_9[g]} for g in gels}  # new time discretization
+dt = {g: {d: 10 for d in dextrans_10[g]} for g in gels}  # new time discretization
 home = '/Users/woldeaman/'  # change home directory accordingly
 path_to_data_4 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/ComputedData/'
 path_to_data_5 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/5.Batch/ComputedData/raw_profiles/'
 path_to_data_6 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/'
 path_to_data_7 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/7.Batch/ComputedData/'
-path_to_data_8 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/8.Batch/ComputedData/'
-path_to_data_9 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/9.Batch/ComputedData/'
-path_exp = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/FCS_data/FCS_data.txt'  # path to FCS measurements
+path_to_data_8 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/8.Batch/ComputedData/'
+path_to_data_9 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/9.Batch/ComputedData/'
+path_to_data_10 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/10.Batch/ComputedData/'
+path_exp = '/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/FCS_data/FCS_data.txt'  # path to FCS measurements
 save_path = home+'/Desktop'  # by default save on Desktop
 ##########################################################################
 
@@ -503,8 +513,8 @@ save_path = home+'/Desktop'  # by default save on Desktop
 ##########################################################################
 # plot data
 # figure_explanation(save=True, savePath=save_path)
-dextrans_compt = [dextrans_8_plt, dextrans_9]
-measurements = [path_to_data_8, path_to_data_9]  # gather paths for different measurements
+dextrans_compt = [dextrans_8_plt, dextrans_9, dextrans_10]
+measurements = [path_to_data_8, path_to_data_9, path_to_data_10]  # gather paths for different measurements
 
 # read fit data
 D_sol, D_gel, dF, t_sig, d_sig, scalings = {}, {}, {}, {}, {}, {}

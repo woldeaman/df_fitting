@@ -80,7 +80,7 @@ def plot_residuals(xx, residuals, tt, t_sig, save=False, savePath=os.getcwd(),
 #################
 #  ENVIRONMENT  #
 ##########################################################################
-path = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/9.Batch/ComputedData/'
+path = '/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/10.Batch/ComputedData/'
 ##########################################################################
 
 
@@ -90,14 +90,14 @@ path = '/Users/woldeaman/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/9.Bat
 def main():
     gels = [6, 10, 20]
     dextrans = {6: ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'],
-                10: ['dex4', 'dex4_vol2', 'dex10', 'dex10_vol2', 'dex20', 'dex20_vol2', 'dex40', 'dex40_vol2'],
+                10: ['dex4', 'dex4_vol2', 'dex10', 'dex10_vol2', 'dex20', 'dex20_vol2', 'dex20_vol2_raw', 'dex40', 'dex40_raw', 'dex40_vol2'],
                 20: ['dex20', 'dex40']}  # dextrans measured for each gel
     # dt_setups = {g: {'dex4': 10, 'dex4_cut': 10, 'dex20': 10, 'dex40': 10, 'FITC': 10, 'dex70': 30} for g in gels}
     for g in gels:
         for d in dextrans[g]:
             # plotting profiles
             path_p = path+'/gel%i_%s' % (g, d)  # path to experimental profiles
-            path_p = "/Users/woldeaman/Desktop/"  # path to experimental profiles
+            # path_p = "/Users/woldeaman/Desktop/"  # path to experimental profiles
             data = np.loadtxt(path_p+'/gel%i_%s.txt' % (g, d), delimiter=',')  # read profile data
             # dt = dt_setups[g][d]  # intervall between recorded stacks
             dt = 10
