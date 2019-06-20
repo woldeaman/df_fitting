@@ -80,7 +80,7 @@ def plot_residuals(xx, residuals, tt, t_sig, save=False, savePath=os.getcwd(),
 #################
 #  ENVIRONMENT  #
 ##########################################################################
-path = '/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/10.Batch/ComputedData/'
+path = '/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/11.Batch/ExperimentalData/'
 ##########################################################################
 
 
@@ -88,29 +88,28 @@ path = '/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/10.
 #  MAIN LOOP    #
 ##########################################################################
 def main():
-    gels = [6, 10, 20]
-    dextrans = {6: ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'],
-                10: ['dex4', 'dex4_vol2', 'dex10', 'dex10_vol2', 'dex20', 'dex20_vol2', 'dex20_vol2_raw', 'dex40', 'dex40_raw', 'dex40_vol2'],
-                20: ['dex20', 'dex40']}  # dextrans measured for each gel
+    gels = [10, 20]
+    dextrans = {10: ['dex4', 'dex10', 'dex20', 'dex40'],
+                20: ['dex4', 'dex10', 'dex40', 'dex40_cut']}  # dextrans measured for each gel
     # dt_setups = {g: {'dex4': 10, 'dex4_cut': 10, 'dex20': 10, 'dex40': 10, 'FITC': 10, 'dex70': 30} for g in gels}
     for g in gels:
         for d in dextrans[g]:
             # plotting profiles
-            path_p = path+'/gel%i_%s' % (g, d)  # path to experimental profiles
+            # path_p = path+'/gel%i_%s' % (g, d)  # path to experimental profiles
             # path_p = "/Users/woldeaman/Desktop/"  # path to experimental profiles
-            data = np.loadtxt(path_p+'/gel%i_%s.txt' % (g, d), delimiter=',')  # read profile data
+            data = np.loadtxt(path+'/gel%i_%s.txt' % (g, d), delimiter=',')  # read profile data
             # dt = dt_setups[g][d]  # intervall between recorded stacks
             dt = 10
             xx, cc_exp, tt = data[:, 0], data[:, 1:], np.arange(0, dt*data[0, 1:].size, dt)
             plot_profiles(xx, cc_exp, tt, save=True, savePath='/Users/woldeaman/Desktop/', name='gel%s_%s' % (g, d))
             # plotting residuals
-            path_res = path+'/gel%i_%s' % (g, d)
-            t_sig = pd.read_excel(path_res+'/results.xlsx')['Averaged Results'].values[3]
-            scalings = np.loadtxt(path_res+'/scalings_best.txt', delimiter=',')[:, 1]
-            cc_scaled = [f*c for f, c in zip(scalings, cc_exp.T)]  # compute scaled experimental data
-            cc_theo = np.loadtxt(path_res+'/cc_theo_best.txt', delimiter=',')
-            residuals = [c_e - c_t[6:] for c_e, c_t in zip(cc_scaled[1:], cc_theo[:, 1:].T)]
-            plot_residuals(xx, residuals, tt, t_sig, save=True, savePath='/Users/woldeaman/Desktop/', name='gel%s_%s_residuals' % (g, d))
+            # path_res = path+'/gel%i_%s' % (g, d)
+            # t_sig = pd.read_excel(path_res+'/results.xlsx')['Averaged Results'].values[3]
+            # scalings = np.loadtxt(path_res+'/scalings_best.txt', delimiter=',')[:, 1]
+            # cc_scaled = [f*c for f, c in zip(scalings, cc_exp.T)]  # compute scaled experimental data
+            # cc_theo = np.loadtxt(path_res+'/cc_theo_best.txt', delimiter=',')
+            # residuals = [c_e - c_t[6:] for c_e, c_t in zip(cc_scaled[1:], cc_theo[:, 1:].T)]
+            # plot_residuals(xx, residuals, tt, t_sig, save=True, savePath='/Users/woldeaman/Desktop/', name='gel%s_%s_residuals' % (g, d))
 
 if __name__ == "__main_":
     main()
