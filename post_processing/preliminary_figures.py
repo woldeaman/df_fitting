@@ -170,6 +170,7 @@ def fit_theory(dF):
     return radii, r_pore, K_theo, d_ratio_theo
 
 
+# %%
 @mpltex.acs_decorator  # making acs-style figures
 def figure_c_init(discretization, c_init, save=False, savePath=None):
     """Make figure for explaining building of initial profile."""
@@ -468,6 +469,7 @@ def make_animation(dx_dist, zz_exp, c_init, Dsol, Dgel, dF, t_sig, d_sig,
     fig.tight_layout(pad=0.5, w_pad=0.55)
     # save the animation as an mp4.  This requires ffmpeg or mencoder
     anim.save(savePath+'/%s_animation.mp4' % name, fps=60, extra_args=['-vcodec', 'libx264'])
+# %%
 ##########################################################################
 
 
@@ -489,10 +491,11 @@ dextrans_9 = {6: ['dex4', 'dex10', 'dex20', 'dex40'], 10: [],
 dextrans_10 = {6: ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'],
                10: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [],
                20: ['dex20', 'dex40']}  # dextrans measured for each gel
-dextrans_10_plt = {6: ['dex4', 'dex10', 'dex20', 'dex40'],
-                   10: ['dex4', 'dex10', 'dex20'], 0: [],
-                   20: ['dex40']}  # dextrans measured for each gel
 dextrans_10_2 = {10: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 6: [], 20: []}  # dextrans measured for each gel
+# latest plot
+dextrans_9_plt = {6: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 10: [], 20: []}  # molecular weight of analyzed dextrans for the different gels
+dextrans_10_plt = {6: ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'], 0: [], 10: [], 20: []}  # dextrans measured for each gel
+dextrans_11 = {10: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 6: [], 20: ['dex4', 'dex10']}  # dextrans measured for each gel
 
 
 # dt = {g: {4: 10, 20: 10, 40: 10, 70: 30} for g in gels}  # new time discretization
@@ -506,6 +509,8 @@ path_to_data_8 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/8.Ba
 path_to_data_9 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/9.Batch/ComputedData/'
 path_to_data_10 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/10.Batch/ComputedData/'
 path_to_data_10_2 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/10.Batch-2/ComputedData/'
+path_to_data_11 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/11.Batch/ComputedData/'
+
 path_exp = '/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/FCS_data/FCS_data.txt'  # path to FCS measurements
 save_path = home+'/Desktop'  # by default save on Desktop
 ##########################################################################
@@ -516,8 +521,8 @@ save_path = home+'/Desktop'  # by default save on Desktop
 ##########################################################################
 # plot data
 # figure_explanation(save=True, savePath=save_path)
-dextrans_compt = [dextrans_8_plt, dextrans_9, dextrans_10_plt, dextrans_10_2]
-measurements = [path_to_data_8, path_to_data_9, path_to_data_10, path_to_data_10_2]  # gather paths for different measurements
+dextrans_compt = [dextrans_9_plt, dextrans_10_plt, dextrans_11]
+measurements = [path_to_data_9, path_to_data_10, path_to_data_11]  # gather paths for different measurements
 
 # read fit data
 D_sol, D_gel, dF, t_sig, d_sig, scalings = {}, {}, {}, {}, {}, {}
@@ -530,10 +535,10 @@ for idx, dex in zip(enumerate(measurements), dextrans_compt):  # gather data fro
     disc, c_ex, z_vec = discretizations_and_initial_profiles(mes, dextrans_compt[i])
 
     # compute time resolved average concentration
-    # (avg_bulk_theo, avg_trans_theo,
-    #  avg_gel_theo, avg_gel_exp, avg_trans_exp) = compute_amount(disc, z_vec, c_ex, scalings[i],
-    #                                                             D_sol[i], D_gel[i], dF[i], t_sig[i], d_sig[i],
-    #                                                             dextrans=dextrans_compt[i], dt=dt)
+    (avg_bulk_theo, avg_trans_theo,
+     avg_gel_theo, avg_gel_exp, avg_trans_exp) = compute_amount(disc, z_vec, c_ex, scalings[i],
+                                                                D_sol[i], D_gel[i], dF[i], t_sig[i], d_sig[i],
+                                                                dextrans=dextrans_compt[i], dt=dt)
     # # computing theoretical data
     # r_h, r_pore_fit, K_theo, d_ratio_theo = fit_theory(dF[i])
     # figure_theory(r_h, D_sol[i], D_gel[i], dF[i], d_ratio_theo,
