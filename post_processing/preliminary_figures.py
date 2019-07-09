@@ -494,8 +494,10 @@ dextrans_10 = {6: ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'],
 dextrans_10_2 = {10: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 6: [], 20: []}  # dextrans measured for each gel
 # latest plot
 dextrans_9_plt = {6: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 10: [], 20: []}  # molecular weight of analyzed dextrans for the different gels
-dextrans_10_plt = {6: ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'], 0: [], 10: [], 20: []}  # dextrans measured for each gel
-dextrans_11 = {10: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 6: [], 20: ['dex4', 'dex10']}  # dextrans measured for each gel
+dextrans_10_plt = {6: ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'], 0: [],
+                   10: ['dex4', 'dex10', 'dex20'], 20: []}  # dextrans measured for each gel
+dextrans_10_2_plt = {10: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 6: [], 20: []}  # dextrans measured for each gel
+dextrans_11 = {10: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 6: [], 20: []}  # dextrans measured for each gel
 
 
 # dt = {g: {4: 10, 20: 10, 40: 10, 70: 30} for g in gels}  # new time discretization
@@ -521,8 +523,8 @@ save_path = home+'/Desktop'  # by default save on Desktop
 ##########################################################################
 # plot data
 # figure_explanation(save=True, savePath=save_path)
-dextrans_compt = [dextrans_9_plt, dextrans_10_plt, dextrans_11]
-measurements = [path_to_data_9, path_to_data_10, path_to_data_11]  # gather paths for different measurements
+dextrans_compt = [dextrans_9_plt, dextrans_10_plt, dextrans_10_2_plt, dextrans_11]
+measurements = [path_to_data_9, path_to_data_10, path_to_data_10_2, path_to_data_11]  # gather paths for different measurements
 
 # read fit data
 D_sol, D_gel, dF, t_sig, d_sig, scalings = {}, {}, {}, {}, {}, {}
