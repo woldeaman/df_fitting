@@ -497,11 +497,11 @@ dextrans_9_plt = {6: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 10: [], 20: []}
 dextrans_10_plt = {6: ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'], 0: [],
                    10: ['dex4', 'dex10', 'dex20'], 20: []}  # dextrans measured for each gel
 dextrans_10_2_plt = {10: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 6: [], 20: []}  # dextrans measured for each gel
-dextrans_11 = {10: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 6: [], 20: []}  # dextrans measured for each gel
+dextrans_11 = {10: ['dex4', 'dex10', 'dex20', 'dex40_cut'], 0: [], 6: [], 20: []}  # dextrans measured for each gel
 
 
 # dt = {g: {4: 10, 20: 10, 40: 10, 70: 30} for g in gels}  # new time discretization
-dt = {g: {d: 10 for d in ['dex4', 'dex10', 'dex20', 'dex40', 'dex70']} for g in gels}  # new time discretization
+dt = {g: {d: 10 for d in ['dex4', 'dex10', 'dex20', 'dex40', 'dex40_cut', 'dex70']} for g in gels}  # new time discretization
 home = '/Users/woldeaman/'  # change home directory accordingly
 path_to_data_4 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/ComputedData/'
 path_to_data_5 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/5.Batch/ComputedData/raw_profiles/'
@@ -525,6 +525,7 @@ save_path = home+'/Desktop'  # by default save on Desktop
 # figure_explanation(save=True, savePath=save_path)
 dextrans_compt = [dextrans_9_plt, dextrans_10_plt, dextrans_10_2_plt, dextrans_11]
 measurements = [path_to_data_9, path_to_data_10, path_to_data_10_2, path_to_data_11]  # gather paths for different measurements
+# TODO: make averages for new data!
 
 # read fit data
 D_sol, D_gel, dF, t_sig, d_sig, scalings = {}, {}, {}, {}, {}, {}
