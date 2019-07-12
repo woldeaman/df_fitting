@@ -1,10 +1,10 @@
 % exemplary script showing pre-processing steps of microscopy data
 clear;
 
-data_path='/Users/woldeaman/Downloads/190619-ah251_g10-d40-I/'; % supply path to data
-filename='190619-ah251_g10-d40-I';  % supply filenames here
+data_path='/Users/woldeaman/Downloads/190619-ah251_g10-d10-I/'; % supply path to data
+filename='190619-ah251_g10-d10-I';  % supply filenames here
 z_max=44;  % number of recorde z-stacks
-t_max=263;  % number of recorded time points
+t_max=179;  % number of recorded time points
 
 int=[];
 
