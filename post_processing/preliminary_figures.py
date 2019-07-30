@@ -340,6 +340,91 @@ def figure_results(exp_data, gels, D_sol, D_gel, dF, save=False, dscale='linear'
 
 
 @mpltex.acs_decorator  # making acs-style figures
+def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=False, dscale='log',
+                            xscale='log', savePath=None, locs_dLegend=['upper right', 'lower left', 'lower left'],
+                            name='DF_results', leg=True):
+    """Plot results in nice figure."""
+    gel_styles = {6: 'o-', 10: 's-', 0: 's--', 20: '^-'}  # plotting styles for different gels
+    meas_col = ['r', 'm', 'b', 'c']  # colors for different measurements
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot(131)
+    ax2 = fig.add_subplot(132, sharey=ax1, sharex=ax1)
+    ax3 = fig.add_subplot(133)
+    axes = [ax1, ax2, ax3]
+    fig.text(0.005, 0.92, 'A', fontsize='xx-large', weight='extra bold')  # add subplot label
+    fig.text(0.33, 0.92, 'B', fontsize='xx-large', weight='extra bold')
+    fig.text(0.66, 0.92, 'C', fontsize='xx-large', weight='extra bold')
+
+    # plot data in three different panels
+    for ax, dat, ylab in zip(axes, [D_sol, D_gel, dF],
+                             ['$D_{\\text{sol}}$ [$\mu$m$^2$/s]',
+                              '$D_{\\text{gel}}$ [$\mu$m$^2$/s]',
+                              '$\Delta F$ [$k_{\\text{B}}T$]']):
+        for mes, col in zip(dat.values(), meas_col):
+            for g, mfcs in zip(gels, [col, 'white']):
+                dextrns = np.array([int(re.findall(r"\d+", dx)[0]) for dx in mes[g].keys()])
+                data = np.array(list(mes[g].values()))
+                if data.size > 0:
+                    ax.errorbar(dextrns[dextrns < 70], data[dextrns < 70, 0], data[dextrns < 70, 1],
+                                fmt=col+gel_styles[g], mfc=mfcs)
+                ax.set_xticks([4, 10, 20, 40, 60, 70])
+                ax.set_ylabel(ylab)
+                ax.set_xlabel('$M_{\\text{dex}}$ [kDa]')
+                ax.minorticks_on()
+    # plot experimental data
+    exp_plt = axes[0].plot(exp_data[:, 0], exp_data[:, 1], 'k^-', zorder=10)
+    frap_plt = axes[0].plot(FRAP_data[:, 0], FRAP_data[:, 1], 'k^--', mfc='white', zorder=10)
+    # plot exponent -1 for D_gel ~ M_dex^-1 relation
+    m_dex = np.linspace(4, 40)
+    proportional = axes[1].plot(m_dex, 300/m_dex, 'k:', zorder=10)
+    # axes[1].annotate("$\propto M_\\text{dex}^{-1}$", xy=(m_dex.mean(), 300/m_dex.mean()), xycoords='data',
+    #                  xytext=(m_dex.mean(), 100), textcoords='data', zorder=10)
+
+    # setting diffusivity yscale
+    for ax in axes[:-1]:
+        ax.set_yscale(dscale)
+        ax.set_xscale(xscale)
+
+    # dummy plots for legend
+    n_measurements = len(D_sol)
+    plts = [[plt.plot([None], '%s%s' % (gel_styles[g], col), mfc=g_mfc)
+             for g, g_mfc in zip(gels, [col, 'white'])]
+            for col in meas_col[:n_measurements]]
+    leg1 = axes[0].legend([exp_plt[0], frap_plt[0]], ['experiment', 'ref. XXX'],
+                          frameon=False, loc=locs_dLegend[-1], ncol=2,
+                          fontsize='small', markerscale=0.75, handlelength=1.2)
+    axes[0].legend([p[0] for p in plts[-1]],
+                   ['$M_{\\text{gel}}$ = %d kDa' % g for g in gels],
+                   frameon=False, loc=locs_dLegend[1], ncol=2,
+                   fontsize='small', markerscale=0.75, handlelength=1.2)
+    axes[0].add_artist(leg1)
+    leg2 = axes[1].legend([proportional[0]], ["$\propto M_\\text{dex}^{-1}$"],
+                          frameon=False, loc=locs_dLegend[-1],
+                          fontsize='small', markerscale=0.75, handlelength=1.2)
+    axes[1].legend([p[0] for p in plts[-1]],
+                   ['$M_{\\text{gel}}$ = %d kDa' % g for g in gels],
+                   frameon=False, loc=locs_dLegend[1], ncol=2,
+                   fontsize='small', markerscale=0.75, handlelength=1.2)
+    axes[1].add_artist(leg2)
+    axes[2].legend([p[0] for p in plts[-1]],
+                   ['$M_{\\text{gel}}$ = %d kDa' % g for g in gels],
+                   frameon=False, loc=locs_dLegend[1], ncol=2,
+                   fontsize='small', markerscale=0.75, handlelength=1.2)
+
+    # for double column figures in acs style format
+    w_double = 7  # inch size for width of double column figure for ACS journals
+    width, height = fig.get_size_inches()
+    fig.set_size_inches(w_double, height)
+    fig.tight_layout(pad=0.5, w_pad=0.55)
+
+    if save:
+        plt.savefig(savePath+'/%s.pdf' % name)
+    else:
+        plt.show()
+
+
+@mpltex.acs_decorator  # making acs-style figures
 def figure_theory(r_h, D_sol_exp, D_gel_exp, dF_exp, D_ratio_theo, K_theo,
                   save=False, savePath=None):
     """Plot comparison to fitted theory data."""
@@ -497,7 +582,7 @@ dextrans_9_plt = {6: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 10: [], 20: []}
 dextrans_10_plt = {6: ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'], 0: [],
                    10: ['dex4', 'dex10', 'dex20'], 20: []}  # dextrans measured for each gel
 dextrans_10_2_plt = {10: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 6: [], 20: []}  # dextrans measured for each gel
-dextrans_11 = {10: ['dex4', 'dex10', 'dex20', 'dex40_cut'], 0: [], 6: [], 20: []}  # dextrans measured for each gel
+dextrans_11 = {10: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 6: [], 20: []}  # dextrans measured for each gel
 
 
 # dt = {g: {4: 10, 20: 10, 40: 10, 70: 30} for g in gels}  # new time discretization
@@ -538,10 +623,10 @@ for idx, dex in zip(enumerate(measurements), dextrans_compt):  # gather data fro
     disc, c_ex, z_vec = discretizations_and_initial_profiles(mes, dextrans_compt[i])
 
     # compute time resolved average concentration
-    (avg_bulk_theo, avg_trans_theo,
-     avg_gel_theo, avg_gel_exp, avg_trans_exp) = compute_amount(disc, z_vec, c_ex, scalings[i],
-                                                                D_sol[i], D_gel[i], dF[i], t_sig[i], d_sig[i],
-                                                                dextrans=dextrans_compt[i], dt=dt)
+    # (avg_bulk_theo, avg_trans_theo,
+    #  avg_gel_theo, avg_gel_exp, avg_trans_exp) = compute_amount(disc, z_vec, c_ex, scalings[i],
+    #                                                             D_sol[i], D_gel[i], dF[i], t_sig[i], d_sig[i],
+    #                                                             dextrans=dextrans_compt[i], dt=dt)
     # # computing theoretical data
     # r_h, r_pore_fit, K_theo, d_ratio_theo = fit_theory(dF[i])
     # figure_theory(r_h, D_sol[i], D_gel[i], dF[i], d_ratio_theo,
@@ -590,10 +675,11 @@ figure_results(exp_data[:-2, :], gels, D_sol, D_gel, dF, save=True,
                name='DF_results_log')
 # plot averaged data
 # exp_data = np.loadtxt('/Users/woldeaman/Desktop/two_comp_fit.txt')
-figure_results(exp_data[:-2, :], gels, {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
-               save=True, savePath=save_path, name='avg_data',
-               locs_dLegend=['upper right', 'upper right', 'lower left'])
-figure_results(exp_data[:-2, :], gels, {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
-               dscale='log', xscale='log', save=True, savePath=save_path,
-               locs_dLegend=['lower left', 'lower left', 'upper right'],
-               name='avg_data_log')
+FRAP_dat = np.loadtxt('/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/FCS_data/FRAP_data.txt')
+figure_results_combined(exp_data[:-2, :], FRAP_dat[:5, :], [6, 10], {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
+                        save=True, savePath=save_path, name='avg_data',
+                        locs_dLegend=['upper right', 'upper right', 'lower left'])
+figure_results_combined(exp_data[:-2, :], FRAP_dat[:5, :], [6, 10], {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
+                        dscale='log', xscale='log', save=True, savePath=save_path,
+                        locs_dLegend=['lower left', 'lower left', 'upper right'],
+                        name='avg_data_log')
