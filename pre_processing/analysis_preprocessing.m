@@ -1,12 +1,12 @@
 % pre processing of profiles, flip and cut glass off
 
-name = 'gel10_dex10_cut'  % supply name for profiles
+name = 'gel6_dex40'  % supply name for profiles
 % first flip to have bulk on left side
 flipped = transpose(fliplr(transpose(int(:, :))));
 
 % then cut off glass, adjust cut-off bin here
-start_off = 12;
-cut_off = 41;
+start_off = 3;
+cut_off = 33;
 cut = flipped(1:cut_off, :);
 % find maximal value and only store profiles up to this point, as systematic decline of concentration in bulk was observed
 cut = cut(start_off:end, :);  % truncate profiles after maximum

@@ -82,7 +82,7 @@ def plot_residuals(xx, residuals, tt, t_sig, save=False, savePath=os.getcwd(),
 #################
 #  ENVIRONMENT  #
 ##########################################################################
-path = '/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/11.Batch/ComputedData/'
+path = '/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/12.Batch/ExperimentalData/'
 ##########################################################################
 
 
@@ -90,20 +90,18 @@ path = '/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/11.
 #  MAIN LOOP    #
 ##########################################################################
 def main():
-    gels = [10, 20]
-    dextrans = {10: ['dex4', 'dex10', 'dex20', 'dex40'],
-                20: ['dex4', 'dex10']}  # dextrans measured for each gel
+    gels = [6, 10]
+    dextrans = {6: ['dex10', 'dex20', 'dex40'],
+                10: ['dex10', 'dex40', 'dex70']}  # dextrans measured for each gel
     # dt_setups = {g: {'dex4': 10, 'dex4_cut': 10, 'dex20': 10, 'dex40': 10, 'FITC': 10, 'dex70': 30} for g in gels}
     for g in gels:
         for d in dextrans[g]:
             # plotting profiles
-            # path_p = path+'/gel%i_%s' % (g, d)  # path to experimental profiles
-            # path_p = "/Users/woldeaman/Desktop/"  # path to experimental profiles
             data = np.loadtxt(path+'/gel%i_%s/gel%i_%s.txt' % (g, d, g, d), delimiter=',')  # read profile data
             # dt = dt_setups[g][d]  # intervall between recorded stacks
             dt = 10
             xx, cc_exp, tt = data[:, 0], data[:, 1:], np.arange(0, dt*data[0, 1:].size, dt)
-            # plot_profiles(xx, cc_exp, tt, save=True, savePath='/Users/woldeaman/Desktop/', name='gel%s_%s' % (g, d))
+            plot_profiles(xx, cc_exp, tt, save=True, savePath='/Users/woldeaman/Desktop/', name='gel%s_%s' % (g, d))
             # plotting residuals
             path_res = path+'/gel%i_%s' % (g, d)
             t_sig = pd.read_excel(path_res+'/results.xlsx')['Averaged Results'].values[3]
