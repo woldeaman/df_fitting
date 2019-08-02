@@ -1,7 +1,7 @@
 % exemplary script showing pre-processing steps of microscopy data
 clear;
 
-data_path='/Users/woldeaman/Downloads/190731_ah271_g6-d40-I/'; % supply path to data
+data_path='/Users/woldeaman/Downloads/12.Batch/190731_ah271_g6-d40-I/'; % supply path to data
 filename='190731_ah271_g6-d40-I';  % supply filenames here
 z_max=44;  % number of recorde z-stacks
 t_max=179;  % number of recorded time points
@@ -11,7 +11,7 @@ int=[];
 for it=0:t_max
     % set up correct image names for each time point and z-position
     file_ext_t=num2str(it);
-    while length(file_ext_t)<length(num2str(t_max))
+    while length(file_ext_t)<length(num2str(t_max, '%03d'))
         file_ext_t=strcat('0',file_ext_t);
     end
     file_ext_t=strcat('_t',file_ext_t);
