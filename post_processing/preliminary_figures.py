@@ -561,42 +561,23 @@ def make_animation(dx_dist, zz_exp, c_init, Dsol, Dgel, dF, t_sig, d_sig,
 #################
 #  ENVIRONMENT  #
 ##########################################################################
-gels = [0, 6, 10, 20]  # molecular weight of the analyzed gels [kDa]
-# gels = [6, 10]  # molecular weight of the analyzed gels [kDa]
+gels = [6, 10]  # molecular weight of the analyzed gels [kDa]
 
-# previous batch
-dextrans_4 = {6: [4, 10, 20], 10: [4, 10]}  # molecular weight of analyzed dextrans for the different gels
-dextrans_5 = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed dextrans for the different gels
-dextrans_6 = {6: [4, 20, 70], 10: [4, 20, 70]}  # molecular weight of analyzed dextrans for the different gels
-dextrans_7 = {6: [4, 40, 70], 10: [4, 20, 40, 70]}  # molecular weight of analyzed dextrans for the different gels
-dextrans_8 = {6: ['dex4', 'dex40', 'FITC'], 10: ['dex4', 'dex40', 'FITC'], 20: ['dex4', 'dex4_cut', 'dex40']}  # molecular weight of analyzed dextrans for the different gels
-dextrans_8_plt = {6: ['dex4'], 0: ['dex4'], 20: [], 10: []}  # molecular weight of analyzed dextrans for the different gels
-dextrans_9 = {6: ['dex4', 'dex10', 'dex20', 'dex40'], 10: [],
-              0: ['dex4', 'dex10', 'dex20', 'dex40'], 20: []}  # molecular weight of analyzed dextrans for the different gels
-dextrans_10 = {6: ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'],
-               10: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [],
-               20: ['dex20', 'dex40']}  # dextrans measured for each gel
-dextrans_10_2 = {10: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 6: [], 20: []}  # dextrans measured for each gel
-# latest plot
-dextrans_9_plt = {6: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 10: [], 20: []}  # molecular weight of analyzed dextrans for the different gels
-dextrans_10_plt = {6: ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'], 0: [],
-                   10: ['dex4', 'dex10', 'dex20'], 20: []}  # dextrans measured for each gel
-dextrans_10_2_plt = {10: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 6: [], 20: []}  # dextrans measured for each gel
-dextrans_11 = {10: ['dex4', 'dex10', 'dex20', 'dex40'], 0: [], 6: [], 20: []}  # dextrans measured for each gel
+# latest plots
+dextrans_9_plt = {6: ['dex4', 'dex10', 'dex20', 'dex40'], 10: []}  # molecular weight of analyzed dextrans for the different gels
+dextrans_10_plt = {6: ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'],
+                   10: ['dex4', 'dex4_vol2', 'dex10', 'dex10_vol2', 'dex20', 'dex20_vol2', 'dex40']}  # molecular weight of analyzed dextrans for the different gels
+dextrans_11_plt = {10: ['dex4', 'dex10', 'dex20', 'dex40'], 6: []}  # molecular weight of analyzed dextrans for the different gels
+dextrans_12_plt = {10: ['dex10', 'dex40', 'dex70'], 6: ['dex10', 'dex20', 'dex40']}  # molecular weight of analyzed dextrans for the different gels
 
 
-# dt = {g: {4: 10, 20: 10, 40: 10, 70: 30} for g in gels}  # new time discretization
-dt = {g: {d: 10 for d in ['dex4', 'dex10', 'dex20', 'dex40', 'dex40_cut', 'dex70']} for g in gels}  # new time discretization
+dt = {g: {d: 10 for d in ['dex4', 'dex4_vol2', 'dex10', 'dex10_vol2', 'dex20', 'dex20_vol2', 'dex40', 'dex70']} for g in gels}  # new time discretization
 home = '/Users/woldeaman/'  # change home directory accordingly
-path_to_data_4 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/4.Batch/ComputedData/'
-path_to_data_5 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/5.Batch/ComputedData/raw_profiles/'
-path_to_data_6 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/6.Batch/ComputedData/'
-path_to_data_7 = home+'/Dropbox/PhD/Projects/FokkerPlanckModeling/PEG_Gel/7.Batch/ComputedData/'
-path_to_data_8 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/8.Batch/ComputedData/'
-path_to_data_9 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/9.Batch/ComputedData/'
-path_to_data_10 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/10.Batch/ComputedData/'
-path_to_data_10_2 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/10.Batch-2/ComputedData/'
-path_to_data_11 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/11.Batch/ComputedData/'
+path_to_data_9 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/consisten_preprocessing/9.Batch/'
+path_to_data_10 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/consisten_preprocessing/10.Batch/'
+path_to_data_11 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/consisten_preprocessing/11.Batch/'
+path_to_data_12 = home+'/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/consisten_preprocessing/12.Batch/'
+
 
 path_exp = '/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/FCS_data/FCS_data.txt'  # path to FCS measurements
 save_path = home+'/Desktop'  # by default save on Desktop
@@ -608,9 +589,8 @@ save_path = home+'/Desktop'  # by default save on Desktop
 ##########################################################################
 # plot data
 # figure_explanation(save=True, savePath=save_path)
-dextrans_compt = [dextrans_9_plt, dextrans_10_plt, dextrans_10_2_plt, dextrans_11]
-measurements = [path_to_data_9, path_to_data_10, path_to_data_10_2, path_to_data_11]  # gather paths for different measurements
-# TODO: make averages for new data!
+dextrans_compt = [dextrans_9_plt, dextrans_10_plt, dextrans_11_plt, dextrans_12_plt]
+measurements = [path_to_data_9, path_to_data_10, path_to_data_11, path_to_data_12]  # gather paths for different measurements
 
 # read fit data
 D_sol, D_gel, dF, t_sig, d_sig, scalings = {}, {}, {}, {}, {}, {}
@@ -623,10 +603,10 @@ for idx, dex in zip(enumerate(measurements), dextrans_compt):  # gather data fro
     disc, c_ex, z_vec = discretizations_and_initial_profiles(mes, dextrans_compt[i])
 
     # compute time resolved average concentration
-    # (avg_bulk_theo, avg_trans_theo,
-    #  avg_gel_theo, avg_gel_exp, avg_trans_exp) = compute_amount(disc, z_vec, c_ex, scalings[i],
-    #                                                             D_sol[i], D_gel[i], dF[i], t_sig[i], d_sig[i],
-    #                                                             dextrans=dextrans_compt[i], dt=dt)
+    (avg_bulk_theo, avg_trans_theo,
+     avg_gel_theo, avg_gel_exp, avg_trans_exp) = compute_amount(disc, z_vec, c_ex, scalings[i],
+                                                                D_sol[i], D_gel[i], dF[i], t_sig[i], d_sig[i],
+                                                                dextrans=dextrans_compt[i], dt=dt)
     # # computing theoretical data
     # r_h, r_pore_fit, K_theo, d_ratio_theo = fit_theory(dF[i])
     # figure_theory(r_h, D_sol[i], D_gel[i], dF[i], d_ratio_theo,
@@ -677,9 +657,8 @@ figure_results(exp_data[:-2, :], gels, D_sol, D_gel, dF, save=True,
 # exp_data = np.loadtxt('/Users/woldeaman/Desktop/two_comp_fit.txt')
 FRAP_dat = np.loadtxt('/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/FCS_data/FRAP_data.txt')
 figure_results_combined(exp_data[:-2, :], FRAP_dat[:5, :], [6, 10], {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
-                        save=True, savePath=save_path, name='avg_data',
-                        locs_dLegend=['upper right', 'upper right', 'lower left'])
+                        save=True, savePath=save_path, name='avg_data_log',
+                        locs_dLegend=['lower left', 'upper left', 'lower left'])
 figure_results_combined(exp_data[:-2, :], FRAP_dat[:5, :], [6, 10], {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
-                        dscale='log', xscale='log', save=True, savePath=save_path,
-                        locs_dLegend=['lower left', 'lower left', 'upper right'],
-                        name='avg_data_log')
+                        save=True, savePath=save_path, name='avg_data', xscale='linear', dscale='linear',
+                        locs_dLegend=['upper right', 'upper right', 'center right'])

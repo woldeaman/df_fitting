@@ -82,7 +82,7 @@ def plot_residuals(xx, residuals, tt, t_sig, save=False, savePath=os.getcwd(),
 #################
 #  ENVIRONMENT  #
 ##########################################################################
-path = '/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/12.Batch/ExperimentalData/'
+path = '/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/consisten_preprocessing/12.Batch/'
 ##########################################################################
 
 
