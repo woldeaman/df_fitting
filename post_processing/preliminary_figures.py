@@ -377,7 +377,7 @@ def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=Fa
     frap_plt = axes[0].plot(FRAP_data[:, 0], FRAP_data[:, 1], 'k^--', mfc='white', zorder=10)
     # plot exponent -1 for D_gel ~ M_dex^-1 relation
     m_dex = np.linspace(4, 40)
-    proportional = axes[1].plot(m_dex, 300/m_dex, 'k:', zorder=10)
+    proportional = axes[1].plot(m_dex, 100*m_dex**(-1/2), 'k:', zorder=10)
     # axes[1].annotate("$\propto M_\\text{dex}^{-1}$", xy=(m_dex.mean(), 300/m_dex.mean()), xycoords='data',
     #                  xytext=(m_dex.mean(), 100), textcoords='data', zorder=10)
 
@@ -399,7 +399,7 @@ def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=Fa
                    frameon=False, loc=locs_dLegend[1], ncol=2,
                    fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[0].add_artist(leg1)
-    leg2 = axes[1].legend([proportional[0]], ["$\propto M_\\text{dex}^{-1}$"],
+    leg2 = axes[1].legend([proportional[0]], ["$\propto M_\\text{dex}^{-1/2}$"],
                           frameon=False, loc=locs_dLegend[-1],
                           fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[1].legend([p[0] for p in plts[-1]],
