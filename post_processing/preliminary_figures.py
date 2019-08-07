@@ -391,7 +391,7 @@ def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=Fa
     plts = [[plt.plot([None], '%s%s' % (gel_styles[g], col), mfc=g_mfc)
              for g, g_mfc in zip(gels, [col, 'white'])]
             for col in meas_col[:n_measurements]]
-    leg1 = axes[0].legend([exp_plt[0], frap_plt[0]], ['experiment', 'ref. XXX'],
+    leg1 = axes[0].legend([exp_plt[0], frap_plt[0]], ['experiment', 'ref. 4'],
                           frameon=False, loc=locs_dLegend[-1], ncol=2,
                           fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[0].legend([p[0] for p in plts[-1]],
