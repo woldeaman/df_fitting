@@ -377,7 +377,10 @@ def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=Fa
     frap_plt = axes[0].plot(FRAP_data[:, 0], FRAP_data[:, 1], 'k^--', mfc='white', zorder=10)
     # plot exponent -1 for D_gel ~ M_dex^-1 relation
     m_dex = np.linspace(4, 40)
-    proportional = axes[1].plot(m_dex, 100*m_dex**(-1/2), 'k:', zorder=10)
+    prop1 = axes[1].plot(m_dex, 100*m_dex**(-1/2), 'k:', zorder=10)
+    prop2 = axes[1].plot(m_dex, 300*m_dex**(-1), 'k--', zorder=10)
+    proportional = [prop1, prop2]
+    prop3 = axes[2].plot(m_dex, 0.03*m_dex+0.55, 'k--', zorder=10)
     # axes[1].annotate("$\propto M_\\text{dex}^{-1}$", xy=(m_dex.mean(), 300/m_dex.mean()), xycoords='data',
     #                  xytext=(m_dex.mean(), 100), textcoords='data', zorder=10)
 
@@ -391,7 +394,7 @@ def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=Fa
     plts = [[plt.plot([None], '%s%s' % (gel_styles[g], col), mfc=g_mfc)
              for g, g_mfc in zip(gels, [col, 'white'])]
             for col in meas_col[:n_measurements]]
-    leg1 = axes[0].legend([exp_plt[0], frap_plt[0]], ['experiment', 'ref. 4'],
+    leg1 = axes[0].legend([exp_plt[0], frap_plt[0]], ['experiment', 'literature'],
                           frameon=False, loc=locs_dLegend[-1], ncol=2,
                           fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[0].legend([p[0] for p in plts[-1]],
@@ -399,18 +402,22 @@ def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=Fa
                    frameon=False, loc=locs_dLegend[1], ncol=2,
                    fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[0].add_artist(leg1)
-    leg2 = axes[1].legend([proportional[0]], ["$\propto M_\\text{dex}^{-1/2}$"],
-                          frameon=False, loc=locs_dLegend[-1],
+    leg2 = axes[1].legend([p[0] for p in proportional], ["$\propto M_\\text{dex}^{-1/2}$", "$\propto M_\\text{dex}^{-1}$"],
+                          frameon=False, loc=locs_dLegend[-1], ncol=2,
                           fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[1].legend([p[0] for p in plts[-1]],
                    ['$M_{\\text{gel}}$ = %d kDa' % g for g in gels],
                    frameon=False, loc=locs_dLegend[1], ncol=2,
                    fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[1].add_artist(leg2)
+    leg3 = axes[2].legend([prop3[0]], ["$\propto M_\\text{dex}$"],
+                          frameon=False, loc="lower right",
+                          fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[2].legend([p[0] for p in plts[-1]],
                    ['$M_{\\text{gel}}$ = %d kDa' % g for g in gels],
                    frameon=False, loc=locs_dLegend[1], ncol=2,
                    fontsize='small', markerscale=0.75, handlelength=1.2)
+    axes[2].add_artist(leg3)
 
     # for double column figures in acs style format
     w_double = 7  # inch size for width of double column figure for ACS journals
