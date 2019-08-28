@@ -18,6 +18,7 @@ import sys
 #################################
 #  DEFINITIONS AND FUNCTIONS    #
 ##########################################################################
+# %%
 def compute_amount(discretizations, z_vectors, c_exps, scalings, d_sols, d_gels,
                    delta_fs, t_sig, d_sig, dextrans, t_max=50000, dt=None):
     """Compute averaged concentration in three different segments."""
@@ -170,7 +171,6 @@ def fit_theory(dF):
     return radii, r_pore, K_theo, d_ratio_theo
 
 
-# %%
 @mpltex.acs_decorator  # making acs-style figures
 def figure_c_init(discretization, c_init, save=False, savePath=None):
     """Make figure for explaining building of initial profile."""
@@ -374,15 +374,16 @@ def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=Fa
                 ax.minorticks_on()
     # plot experimental data
     exp_plt = axes[0].plot(exp_data[:, 0], exp_data[:, 1], 'k^-', zorder=10)
-    frap_plt = axes[0].plot(FRAP_data[:, 0], FRAP_data[:, 1], 'k^--', mfc='white', zorder=10)
+    frap_plt = axes[0].plot(FRAP_data[:, 0], FRAP_data[:, 1], 'k^-', mfc='white', zorder=10)
     # plot exponent -1 for D_gel ~ M_dex^-1 relation
     m_dex = np.linspace(4, 40)
     prop1 = axes[1].plot(m_dex, 100*m_dex**(-1/2), 'k:', zorder=10)
     prop2 = axes[1].plot(m_dex, 300*m_dex**(-1), 'k--', zorder=10)
+    axes[0].plot(m_dex, 300*m_dex**(-1/2), 'k:', zorder=10)
+    axes[0].plot(m_dex, 300*m_dex**(-1)*2.5, 'k--', zorder=10)
     proportional = [prop1, prop2]
     prop3 = axes[2].plot(m_dex, 0.03*m_dex+0.55, 'k--', zorder=10)
-    # axes[1].annotate("$\propto M_\\text{dex}^{-1}$", xy=(m_dex.mean(), 300/m_dex.mean()), xycoords='data',
-    #                  xytext=(m_dex.mean(), 100), textcoords='data', zorder=10)
+    axes[0].set_ylim([6.5, 300])
 
     # setting diffusivity yscale
     for ax in axes[:-1]:
@@ -394,7 +395,8 @@ def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=Fa
     plts = [[plt.plot([None], '%s%s' % (gel_styles[g], col), mfc=g_mfc)
              for g, g_mfc in zip(gels, [col, 'white'])]
             for col in meas_col[:n_measurements]]
-    leg1 = axes[0].legend([exp_plt[0], frap_plt[0]], ['experiment', 'literature'],
+    leg1 = axes[0].legend([exp_plt[0], frap_plt[0]]+[p[0] for p in proportional],
+                          ['experiment', 'literature', "$\propto M_\\text{dex}^{-1/2}$", "$\propto M_\\text{dex}^{-1}$"],
                           frameon=False, loc=locs_dLegend[-1], ncol=2,
                           fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[0].legend([p[0] for p in plts[-1]],
