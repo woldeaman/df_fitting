@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import FormatStrFormatter
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 import mpltex  # for acs style figures
 
 
@@ -66,6 +68,8 @@ def figure_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
         # creating x-vector for plotting experimental profiles
         diff = cc_theo[i][:, 1].size - cc_exp[i][1].size  # difference in lengths
         xx_exp = xx[i][diff:]  # truncated vector for plotting experimental profiles
+        if i == 0:
+            xx_inset = xx_exp  # store x-vector for first subplot for inset plot
 
         # plotting concentration profiles
         plt_c_theo, plt_c_exp = [], []
@@ -119,6 +123,26 @@ def figure_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
             ax.axvspan(-2*dx_2, t_trans[i], color=[0.875, 0.875, 1], lw=0)  # bulk = blue
             ax.axvspan(t_trans[i], xx[i][-1]+2*dx_2, color=[0.9, 0.9, 0.9], lw=0)  # gel = grey
             ax.set_xlim([xx[i][0]-2*dx_2, xx[i][-1]+2*dx_2])
+
+    # make inset for closer comparison of experimental and numerical data
+    inset = inset_axes(ax_profiles_1, width="45%", height="45%", loc='lower left',
+                       bbox_transform=ax_profiles_1.transAxes, bbox_to_anchor=(0.05, 0.05, 1, 1))
+    for j, col in zip(plt_nbr[0], colors[0]):  # plot rest of profiles
+        if j < len(cc_exp[0]):  # only plot experimental data if provided
+            inset.plot(xx_inset, cc_exp[0][j], '.', color=col)
+        inset.plot(xx[0], cc_theo[0][:, j], '--', color=col)
+    inset.plot(xx[0], cc_exp[0][0], '-k')  # t=0 profile
+    mark_inset(ax_profiles_1, inset, loc1=2, loc2=4, fc="none", ec="0.75", zorder=20)
+    inset.get_yaxis().set_visible(False)
+    inset.get_xaxis().set_visible(False)
+    # inset.tick_params(axis='y', labelsize=6)
+    # inset.set_yticks()
+    # ax_profiles_1.indicate_inset_zoom(inset)
+    inset.axvline(t_trans[0], ls=':', c='k')  # indicate transition
+    inset.axvspan(xx[0][0], t_trans[0], color=[0.875, 0.875, 1], lw=0)  # bulk = blue
+    inset.axvspan(t_trans[0], xx[0][-1], color=[0.9, 0.9, 0.9], lw=0)  # gel = grey
+    inset.set_xlim([22, 35])
+    inset.set_ylim([0.65, 1.02])
 
     # for double column figures in acs style format
     w_double = 7  # inch size for width of double column figure for ACS journals
