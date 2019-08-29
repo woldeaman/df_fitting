@@ -400,7 +400,7 @@ def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=Fa
                           frameon=False, loc=locs_dLegend[-1], ncol=2,
                           fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[0].legend([p[0] for p in plts[-1]],
-                   ['$M_{\\text{gel}}$ = %d kDa' % g for g in gels],
+                   ['dPG-G%i' % g for g in gels],
                    frameon=False, loc=locs_dLegend[1], ncol=2,
                    fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[0].add_artist(leg1)
@@ -408,7 +408,7 @@ def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=Fa
                           frameon=False, loc=locs_dLegend[-1], ncol=2,
                           fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[1].legend([p[0] for p in plts[-1]],
-                   ['$M_{\\text{gel}}$ = %d kDa' % g for g in gels],
+                   ['dPG-G%i' % g for g in gels],
                    frameon=False, loc=locs_dLegend[1], ncol=2,
                    fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[1].add_artist(leg2)
@@ -416,7 +416,7 @@ def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=Fa
                           frameon=False, loc="lower right",
                           fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[2].legend([p[0] for p in plts[-1]],
-                   ['$M_{\\text{gel}}$ = %d kDa' % g for g in gels],
+                   ['dPG-G%i' % g for g in gels],
                    frameon=False, loc=locs_dLegend[1], ncol=2,
                    fontsize='small', markerscale=0.75, handlelength=1.2)
     axes[2].add_artist(leg3)
@@ -651,7 +651,7 @@ for g in gels:
                             for key, D in dat.items()])
             mes = mes[mes != np.array(None)]  # kick out Nones
             if len(mes) > 0:
-                avg[dex] = np.array([mes.mean(), mes.std()])
+                avg[dex] = np.array([mes.mean(), mes.std()/np.sqrt(mes.size)])
 
 # computed bulk diffusivities accounting for FITCS D_sol
 exp_data[:-2, 0] = np.array([4, 10, 20, 40])
