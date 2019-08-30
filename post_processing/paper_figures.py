@@ -57,8 +57,7 @@ def read_data(batch, m_dex, m_gel, dt=10, path=path_to_data):
             d_trans, D, F, D_STD, F_STD, error)
 
 
-def compute_penetration_data(batch, m_dex, m_gel, dxx_dist, c_exp,
-                             D, F, t_sig, d_sig, t_max=50000, dt=10):
+def compute_penetration_data(dxx_dist, c_exp, D, F, t_sig, d_sig, t_max=50000, dt=10):
     """Compute averaged concentration in three different segments."""
     # computing WMatrix, start smaller than 6, because D, F is const. only there
     W = fp.WMatrixVar(D, F, start=4, end=None, deltaXX=dxx_dist, con=True)
@@ -240,11 +239,12 @@ def figure_penetration(blk_theo, trns_theo, gel_theo, gel_exp, trans_exp,
                        M_dex=[4, 40], save=False, savePath="/Users/woldeaman/Desktop/"):
     """Figure showing penetration profiles for two exemplary results."""
     fig, axes = plt.subplots(2, 1, sharex=True)
-    fig.text(0.005, 0.96, 'A', fontsize='xx-large', weight='extra bold')  # add subplot labels
-    fig.text(0.005, 0.55, 'B', fontsize='xx-large', weight='extra bold')
+    fig.text(0.025, 0.96, 'A', fontsize='xx-large', weight='extra bold')  # add subplot labels
+    fig.text(0.025, 0.52, 'B', fontsize='xx-large', weight='extra bold')
+    leg_locs = ['lower right', 'center right']
 
     for i in range(2):
-        axes[i].text(0.975, 0.8, '$M_\\text{dex}$ = %i kDa' % M_dex[i],
+        axes[i].text(0.975, 0.75, '$M_\\text{dex}$ = %i kDa' % M_dex[i],
                      transform=axes[i].transAxes, horizontalalignment='right')
         blk_t = axes[i].plot(blk_theo[i][:, 0]/60, blk_theo[i][:, 1], 'b-')
         trn_t = axes[i].plot(trns_theo[i][:, 0]/60, trns_theo[i][:, 1], 'r-')
@@ -256,13 +256,15 @@ def figure_penetration(blk_theo, trns_theo, gel_theo, gel_exp, trans_exp,
         # labels and legends
         leg1 = axes[i].legend([blk_t[0], trn_t[0], gel_t[0]], ['far solution', 'near solution', 'gel'],
                               frameon=False, loc='center left')
-        axes[i].legend([gel_e[0], gel_t[0]], ['experiment', 'theory'], frameon=False, loc='lower right')
+        axes[i].legend([gel_e[0], gel_t[0]], ['experiment', 'theory'], frameon=False,
+                       loc=leg_locs[i])
         axes[i].add_artist(leg1)
 
     axes[1].set(xlabel='$t$ [min]')
     # for double column figures in acs style format
     width, height = fig.get_size_inches()
     fig.set_size_inches(width, height*2)
+    fig.tight_layout()
 
     if save:
         plt.savefig(savePath+'/figure_3.pdf')
@@ -275,26 +277,24 @@ def figure_penetration(blk_theo, trns_theo, gel_theo, gel_exp, trans_exp,
 ###############
 #  MAIN LOOP  #
 ##########################################################################
-batch, m_gel, m_dexs = 11, 10, [4, 40]  # set info for plotting
+batches, m_gel, m_dexs = [11, 10], 10, [4, 40]  # set info for plotting
 # read in data
 (dxx_dist_1, xx_1, xticks_1, cc_exp_1, cc_theo_1,
- tt_1, t_trans_1, t_OG_1, d_trans_1, D_1, F_1, D_STD_1, F_STD_1, error_1) = read_data(batch, m_dexs[0], m_gel,
+ tt_1, t_trans_1, t_OG_1, d_trans_1, D_1, F_1, D_STD_1, F_STD_1, error_1) = read_data(batches[0], m_dexs[0], m_gel,
                                                                                       dt=10, path=path_to_data)
 (dxx_dist_2, xx_2, xticks_2, cc_exp_2, cc_theo_2,
- tt_2, t_trans_2, t_OG_2, d_trans_2, D_2, F_2, D_STD_2, F_STD_2, error_2) = read_data(batch, m_dexs[1], m_gel,
+ tt_2, t_trans_2, t_OG_2, d_trans_2, D_2, F_2, D_STD_2, F_STD_2, error_2) = read_data(batches[1], m_dexs[1], m_gel,
                                                                                       dt=10, path=path_to_data)
 # read and compute penetration data
 (avg_bulk_theo_1, avg_trans_theo_1, avg_gel_theo_1,
- avg_gel_exp_1, avg_trans_exp_1) = compute_penetration_data(batch, m_dexs[0], m_gel, dxx_dist_1,
-                                                            cc_exp_1, D_1, F_1, t_OG_1,
+ avg_gel_exp_1, avg_trans_exp_1) = compute_penetration_data(dxx_dist_1, cc_exp_1, D_1, F_1, t_OG_1,
                                                             d_trans_1, t_max=50000, dt=10)
 (avg_bulk_theo_2, avg_trans_theo_2, avg_gel_theo_2,
- avg_gel_exp_2, avg_trans_exp_2) = compute_penetration_data(batch, m_dexs[0], m_gel, dxx_dist_2,
-                                                            cc_exp_2, D_2, F_2, t_OG_2,
+ avg_gel_exp_2, avg_trans_exp_2) = compute_penetration_data(dxx_dist_2, cc_exp_2, D_2, F_2, t_OG_2,
                                                             d_trans_2, t_max=50000, dt=10)
 
 # make plots
-example_profiles(xx_1, cc_exp_1)
+# example_profiles(xx_1, cc_exp_1)
 figure_profiles([xx_1, xx_2], [xticks_1, xticks_2], [cc_exp_1, cc_exp_2],
                 [cc_theo_1, cc_theo_2], [tt_1, tt_2], [t_trans_1, t_trans_2],
                 [D_1, D_2], [F_1, F_2], [D_STD_1, D_STD_2], [F_STD_1, F_STD_2],
