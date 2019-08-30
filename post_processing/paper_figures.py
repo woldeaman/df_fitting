@@ -36,7 +36,7 @@ def read_data(batch, m_dex, m_gel, dt=10, path=path_to_data):
                           delimiter=',')
     all_results = pd.read_excel(f'{path_to_data}/{batch}.Batch/gel{m_gel}_dex{m_dex}/results.xlsx')
     # separate and compute neccessary data
-    t_trans, error = all_results['Averaged Results'][3], all_results['Averaged Results'][5]
+    t_trans_OG, d_trans, error = all_results['Averaged Results'][3], all_results['Averaged Results'][4], all_results['Averaged Results'][5]
     D, D_STD, F, F_STD = DF[:, 0], DF[:, 1], DF[:, 2], DF[:, 3]
     xx, cc = exp_dat[:, 0], exp_dat[:, 1:]
     tt = np.arange(0, cc[0, :].size*dt, dt)  # time vector
@@ -45,15 +45,59 @@ def read_data(batch, m_dex, m_gel, dt=10, path=path_to_data):
     dxx_dist, dxx_width = fp.discretization_Block(xx)  # get variable discretization
     # build accurate xx-vector
     xx_pre = np.array([np.sum(dxx_width[i:6]) for i in range(6)])
-    xx_scale = np.concatenate((xx_pre, xx))  # zero is at bin 6
+    xx_scale = np.concatenate((-xx_pre, xx))  # zero is at bin 6
     # for labeling the x-axis correctly, first 4 bins at different separation
     xx_dummy = np.concatenate(([0, 6, 12, 18], np.arange(cc_theo[:, 0].size-4)+19))
     xlabels = [np.append(xx_dummy[:3], xx_dummy[6::5]).astype(int),
                np.append(xx_scale[:3], xx_scale[6::5]).astype(int)]
-    t_trans = t_trans/abs(xx[1]-xx[0]) + 19 + 2  # scale transition to new x-vector
+    t_trans = t_trans_OG/abs(xx[1]-xx[0]) + 19 + 2  # scale transition to new x-vector
     tt_ext = np.append(tt[:-1], np.arange(tt[-1], tt[-1]*7))  # extend to long time limit
 
-    return (xx_dummy, xlabels, cc_exp, cc_theo, tt_ext, t_trans, D, F, D_STD, F_STD, error)
+    return (dxx_dist, xx_dummy, xlabels, cc_exp, cc_theo, tt_ext, t_trans, t_trans_OG,
+            d_trans, D, F, D_STD, F_STD, error)
+
+
+def compute_penetration_data(batch, m_dex, m_gel, dxx_dist, c_exp,
+                             D, F, t_sig, d_sig, t_max=50000, dt=10):
+    """Compute averaged concentration in three different segments."""
+    # computing WMatrix, start smaller than 6, because D, F is const. only there
+    W = fp.WMatrixVar(D, F, start=4, end=None, deltaXX=dxx_dist, con=True)
+    # gather interface position in bin dimensions
+    z_trans = int(np.round(t_sig/10))  # dz = 10 and 6 bins in bulk
+    # compute numerical profiles for longer time points
+    tt_long = np.logspace(-2, np.log10(t_max), 5000).astype(int)
+    cc_theo = [fp.calcC(c_exp[0], t=t, W=W) for t in tt_long]
+    # now compute average concentration in different segments
+    bulk = [np.average(cc[:6]) for cc in cc_theo]  # regime without experimental data
+    trans = [np.average(cc[6:(z_trans+6)]) for cc in cc_theo]  # experimental data regime up to interface
+    gel = [np.average(cc[(z_trans+6):]) for cc in cc_theo]  # everything beyond interface
+    # store computed amounts with corresponding time points
+    avg_gel_theo = np.c_[tt_long, gel]
+    avg_trans_theo = np.c_[tt_long, trans]
+    avg_bulk_theo = np.c_[tt_long, bulk]
+    # compute and store also experimental data
+    tt_exp = np.arange(0, len(c_exp)*dt, dt)
+    trn_exp = [np.average(c_exp[0][6:(z_trans+6)])]
+    trn_exp += [np.average(cc[:z_trans]) for cc in c_exp[1:]]
+    gel_exp = [np.average(c_exp[0][(z_trans+6):])]
+    gel_exp += [np.average(cc[z_trans:]) for cc in c_exp[1:]]
+    # store computed amounts with corresponding time points
+    avg_gel_exp = np.c_[tt_exp, gel_exp]
+    avg_trans_exp = np.c_[tt_exp, trn_exp]
+
+    return avg_bulk_theo, avg_trans_theo, avg_gel_theo, avg_gel_exp, avg_trans_exp
+
+
+@mpltex.acs_decorator  # making acs-style figures
+def example_profiles(xx, cc, savePath='/Users/woldeaman/Desktop/'):
+    """Plot example profile."""
+    diff = xx.size - cc[1].size
+    plt.plot(xx[diff:], cc[50], 'ko--', mfc='white')
+    plt.xticks([], [])
+    plt.yticks([], [])
+    plt.xlabel('z-distance')
+    plt.ylabel('concentration')
+    plt.savefig(savePath+'/example_penetration.pdf')
 
 
 @mpltex.acs_decorator  # making acs-style figures
@@ -192,15 +236,38 @@ def figure_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
 
 
 @mpltex.acs_decorator  # making acs-style figures
-def example_profiles(xx, cc, savePath='/Users/woldeaman/Desktop/'):
-    """Plot example profile."""
-    diff = xx.size - cc[1].size
-    plt.plot(xx[diff:], cc[50], 'ko--', mfc='white')
-    plt.xticks([], [])
-    plt.yticks([], [])
-    plt.xlabel('z-distance')
-    plt.ylabel('concentration')
-    plt.savefig(savePath+'/example_penetration.pdf')
+def figure_penetration(blk_theo, trns_theo, gel_theo, gel_exp, trans_exp,
+                       M_dex=[4, 40], save=False, savePath="/Users/woldeaman/Desktop/"):
+    """Figure showing penetration profiles for two exemplary results."""
+    fig, axes = plt.subplots(2, 1, sharex=True)
+    fig.text(0.005, 0.96, 'A', fontsize='xx-large', weight='extra bold')  # add subplot labels
+    fig.text(0.005, 0.55, 'B', fontsize='xx-large', weight='extra bold')
+
+    for i in range(2):
+        axes[i].text(0.975, 0.8, '$M_\\text{dex}$ = %i kDa' % M_dex[i],
+                     transform=axes[i].transAxes, horizontalalignment='right')
+        blk_t = axes[i].plot(blk_theo[i][:, 0]/60, blk_theo[i][:, 1], 'b-')
+        trn_t = axes[i].plot(trns_theo[i][:, 0]/60, trns_theo[i][:, 1], 'r-')
+        gel_t = axes[i].plot(gel_theo[i][:, 0]/60, gel_theo[i][:, 1], 'k-')
+        axes[i].plot(trans_exp[i][:, 0]/60, trans_exp[i][:, 1], 'r.')
+        gel_e = axes[i].plot(gel_exp[i][:, 0]/60, gel_exp[i][:, 1], 'k.')
+        axes[i].set(xscale='log', ylabel='$\\overline{c}$')
+        axes[i].minorticks_on()
+        # labels and legends
+        leg1 = axes[i].legend([blk_t[0], trn_t[0], gel_t[0]], ['far solution', 'near solution', 'gel'],
+                              frameon=False, loc='center left')
+        axes[i].legend([gel_e[0], gel_t[0]], ['experiment', 'theory'], frameon=False, loc='lower right')
+        axes[i].add_artist(leg1)
+
+    axes[1].set(xlabel='$t$ [min]')
+    # for double column figures in acs style format
+    width, height = fig.get_size_inches()
+    fig.set_size_inches(width, height*2)
+
+    if save:
+        plt.savefig(savePath+'/figure_3.pdf')
+    else:
+        plt.show()
 # %%
 ##########################################################################
 
@@ -210,13 +277,30 @@ def example_profiles(xx, cc, savePath='/Users/woldeaman/Desktop/'):
 ##########################################################################
 batch, m_gel, m_dexs = 11, 10, [4, 40]  # set info for plotting
 # read in data
-(xx_1, xticks_1, cc_exp_1, cc_theo_1, tt_1, t_trans_1, D_1, F_1, D_STD_1, F_STD_1, error_1) = read_data(batch, m_dexs[0], m_gel, dt=10, path=path_to_data)
-(xx_2, xticks_2, cc_exp_2, cc_theo_2, tt_2, t_trans_2, D_2, F_2, D_STD_2, F_STD_2, error_2) = read_data(batch, m_dexs[1], m_gel, dt=10, path=path_to_data)
+(dxx_dist_1, xx_1, xticks_1, cc_exp_1, cc_theo_1,
+ tt_1, t_trans_1, t_OG_1, d_trans_1, D_1, F_1, D_STD_1, F_STD_1, error_1) = read_data(batch, m_dexs[0], m_gel,
+                                                                                      dt=10, path=path_to_data)
+(dxx_dist_2, xx_2, xticks_2, cc_exp_2, cc_theo_2,
+ tt_2, t_trans_2, t_OG_2, d_trans_2, D_2, F_2, D_STD_2, F_STD_2, error_2) = read_data(batch, m_dexs[1], m_gel,
+                                                                                      dt=10, path=path_to_data)
+# read and compute penetration data
+(avg_bulk_theo_1, avg_trans_theo_1, avg_gel_theo_1,
+ avg_gel_exp_1, avg_trans_exp_1) = compute_penetration_data(batch, m_dexs[0], m_gel, dxx_dist_1,
+                                                            cc_exp_1, D_1, F_1, t_OG_1,
+                                                            d_trans_1, t_max=50000, dt=10)
+(avg_bulk_theo_2, avg_trans_theo_2, avg_gel_theo_2,
+ avg_gel_exp_2, avg_trans_exp_2) = compute_penetration_data(batch, m_dexs[0], m_gel, dxx_dist_2,
+                                                            cc_exp_2, D_2, F_2, t_OG_2,
+                                                            d_trans_2, t_max=50000, dt=10)
+
 # make plots
+example_profiles(xx_1, cc_exp_1)
 figure_profiles([xx_1, xx_2], [xticks_1, xticks_2], [cc_exp_1, cc_exp_2],
                 [cc_theo_1, cc_theo_2], [tt_1, tt_2], [t_trans_1, t_trans_2],
                 [D_1, D_2], [F_1, F_2], [D_STD_1, D_STD_2], [F_STD_1, F_STD_2],
                 [error_1, error_2], plt_profiles=12, save=True,
                 savePath="/Users/woldeaman/Desktop/")
-example_profiles(xx_1, cc_exp_1)
+figure_penetration([avg_bulk_theo_1, avg_bulk_theo_2], [avg_trans_theo_1, avg_trans_theo_2],
+                   [avg_gel_theo_1, avg_gel_theo_2], [avg_gel_exp_1, avg_gel_exp_2], [avg_trans_exp_1, avg_trans_exp_2],
+                   M_dex=[4, 40], save=True, savePath="/Users/woldeaman/Desktop/")
 ##########################################################################
