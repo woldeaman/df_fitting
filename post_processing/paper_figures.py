@@ -23,6 +23,39 @@ path_to_data = '/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG
 #  DEFINITIONS AND FUNCTIONS    #
 ##########################################################################
 # %%
+def read_data(batch, m_dex, m_gel, dt=10, path=path_to_data):
+    """Read data from fit optimization."""
+    # read raw data
+    DF = np.loadtxt(f'{path_to_data}/{batch}.Batch/gel{m_gel}_dex{m_dex}/DF_avg.txt',
+                    delimiter=',')
+    cc_theo = np.loadtxt(f'{path_to_data}/{batch}.Batch/gel{m_gel}_dex{m_dex}/cc_theo_avg.txt',
+                         delimiter=',')
+    exp_dat = np.loadtxt(f'{path_to_data}/{batch}.Batch/gel{m_gel}_dex{m_dex}/gel{m_gel}_dex{m_dex}.txt',
+                         delimiter=',')
+    scalings = np.loadtxt(f'{path_to_data}/{batch}.Batch/gel{m_gel}_dex{m_dex}/scalings_avg.txt',
+                          delimiter=',')
+    all_results = pd.read_excel(f'{path_to_data}/{batch}.Batch/gel{m_gel}_dex{m_dex}/results.xlsx')
+    # separate and compute neccessary data
+    t_trans, error = all_results['Averaged Results'][3], all_results['Averaged Results'][5]
+    D, D_STD, F, F_STD = DF[:, 0], DF[:, 1], DF[:, 2], DF[:, 3]
+    xx, cc = exp_dat[:, 0], exp_dat[:, 1:]
+    tt = np.arange(0, cc[0, :].size*dt, dt)  # time vector
+    cc = fp.build_zero_profile(cc)
+    cc_exp = [cc[0]]+[c*s for c, s in zip(cc[1:], scalings[:, 2])]  # scaled experimental profiles
+    dxx_dist, dxx_width = fp.discretization_Block(xx)  # get variable discretization
+    # build accurate xx-vector
+    xx_pre = np.array([np.sum(dxx_width[i:6]) for i in range(6)])
+    xx_scale = np.concatenate((xx_pre, xx))  # zero is at bin 6
+    # for labeling the x-axis correctly, first 4 bins at different separation
+    xx_dummy = np.concatenate(([0, 6, 12, 18], np.arange(cc_theo[:, 0].size-4)+19))
+    xlabels = [np.append(xx_dummy[:3], xx_dummy[6::5]).astype(int),
+               np.append(xx_scale[:3], xx_scale[6::5]).astype(int)]
+    t_trans = t_trans/abs(xx[1]-xx[0]) + 19 + 2  # scale transition to new x-vector
+    tt_ext = np.append(tt[:-1], np.arange(tt[-1], tt[-1]*7))  # extend to long time limit
+
+    return (xx_dummy, xlabels, cc_exp, cc_theo, tt_ext, t_trans, D, F, D_STD, F_STD, error)
+
+
 @mpltex.acs_decorator  # making acs-style figures
 def figure_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD,
                     error, M_dex=[4, 40], plt_profiles='all', save=False,
@@ -156,39 +189,6 @@ def figure_profiles(xx, xticks, cc_exp, cc_theo, tt, t_trans, D, F, D_STD, F_STD
         plt.savefig(savePath+'/figure_2.pdf')
     else:
         plt.show()
-
-
-def read_data(batch, m_dex, m_gel, dt=10, path=path_to_data):
-    """Read data from fit optimization."""
-    # read raw data
-    DF = np.loadtxt(f'{path_to_data}/{batch}.Batch/gel{m_gel}_dex{m_dex}/DF_avg.txt',
-                    delimiter=',')
-    cc_theo = np.loadtxt(f'{path_to_data}/{batch}.Batch/gel{m_gel}_dex{m_dex}/cc_theo_avg.txt',
-                         delimiter=',')
-    exp_dat = np.loadtxt(f'{path_to_data}/{batch}.Batch/gel{m_gel}_dex{m_dex}/gel{m_gel}_dex{m_dex}.txt',
-                         delimiter=',')
-    scalings = np.loadtxt(f'{path_to_data}/{batch}.Batch/gel{m_gel}_dex{m_dex}/scalings_avg.txt',
-                          delimiter=',')
-    all_results = pd.read_excel(f'{path_to_data}/{batch}.Batch/gel{m_gel}_dex{m_dex}/results.xlsx')
-    # separate and compute neccessary data
-    t_trans, error = all_results['Averaged Results'][3], all_results['Averaged Results'][5]
-    D, D_STD, F, F_STD = DF[:, 0], DF[:, 1], DF[:, 2], DF[:, 3]
-    xx, cc = exp_dat[:, 0], exp_dat[:, 1:]
-    tt = np.arange(0, cc[0, :].size*dt, dt)  # time vector
-    cc = fp.build_zero_profile(cc)
-    cc_exp = [cc[0]]+[c*s for c, s in zip(cc[1:], scalings[:, 2])]  # scaled experimental profiles
-    dxx_dist, dxx_width = fp.discretization_Block(xx)  # get variable discretization
-    # build accurate xx-vector
-    xx_pre = np.array([np.sum(dxx_width[i:6]) for i in range(6)])
-    xx_scale = np.concatenate((xx_pre, xx))  # zero is at bin 6
-    # for labeling the x-axis correctly, first 4 bins at different separation
-    xx_dummy = np.concatenate(([0, 6, 12, 18], np.arange(cc_theo[:, 0].size-4)+19))
-    xlabels = [np.append(xx_dummy[:3], xx_dummy[6::5]).astype(int),
-               np.append(xx_scale[:3], xx_scale[6::5]).astype(int)]
-    t_trans = t_trans/abs(xx[1]-xx[0]) + 19 + 2  # scale transition to new x-vector
-    tt_ext = np.append(tt[:-1], np.arange(tt[-1], tt[-1]*7))  # extend to long time limit
-
-    return (xx_dummy, xlabels, cc_exp, cc_theo, tt_ext, t_trans, D, F, D_STD, F_STD, error)
 
 
 @mpltex.acs_decorator  # making acs-style figures
