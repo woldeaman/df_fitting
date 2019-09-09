@@ -91,9 +91,11 @@ def compute_penetration_data(dxx_dist, c_exp, D, F, t_sig, d_sig, t_max=50000, d
 def example_profiles(xx, cc, savePath='/Users/woldeaman/Desktop/'):
     """Plot example profile."""
     diff = xx.size - cc[1].size
-    plt.plot(xx[diff:], cc[50], 'ko--', mfc='white')
+    early = plt.plot(xx[diff:], cc[5], 'ko', mfc='white')
+    late = plt.plot(xx[diff:], cc[-1], 'ko')
     plt.xticks([], [])
     plt.yticks([], [])
+    plt.legend([early[0], late[0]], ['early', 'late'], frameon=False, loc='lower left')
     plt.xlabel('z-distance')
     plt.ylabel('concentration')
     plt.savefig(savePath+'/example_penetration.pdf')
@@ -294,7 +296,7 @@ batches, m_gel, m_dexs = [11, 10], 10, [4, 40]  # set info for plotting
                                                             d_trans_2, t_max=50000, dt=10)
 
 # make plots
-# example_profiles(xx_1, cc_exp_1)
+example_profiles(xx_1, cc_exp_1)
 figure_profiles([xx_1, xx_2], [xticks_1, xticks_2], [cc_exp_1, cc_exp_2],
                 [cc_theo_1, cc_theo_2], [tt_1, tt_2], [t_trans_1, t_trans_2],
                 [D_1, D_2], [F_1, F_2], [D_STD_1, D_STD_2], [F_STD_1, F_STD_2],
