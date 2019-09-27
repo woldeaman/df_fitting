@@ -47,7 +47,7 @@ def startUp_slim():
     dt = int(sys.stdin.readline())
 
     print("Choose profiles for analysis, timepoints range from 0 to {} seconds 'all' means all profiles will be analyzed):"
-          .format(data[0, 1:].size*dt))
+          .format((data[0, 1:].size-1)*dt))
     answer = input()
     if "all" in answer:
         tt = "all"
