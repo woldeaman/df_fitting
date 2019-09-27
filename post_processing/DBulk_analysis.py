@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 import mpltex  # for acs style figures
 import re
 
@@ -14,6 +16,7 @@ home = '/Users/woldeaman/'
 #################################
 #  DEFINITIONS AND FUNCTIONS    #
 ##########################################################################
+# %%
 @mpltex.acs_decorator  # making acs-style figures
 def figure_diffusivities(d_sol, d_gel, f_gel, error, opti, name='params_dsol',
                          title='', save=False, scale='lin'):
@@ -24,25 +27,30 @@ def figure_diffusivities(d_sol, d_gel, f_gel, error, opti, name='params_dsol',
     # create figure
     fig, axes = plt.subplots(3, 1, sharex='col')
     axes[0].plot(d_sol, error, '.k-')
-    optimum = axes[0].axvline(opti, c='k', ls=':')
+    axes[0].axvline(opti, c='k', ls=':')
     axes[0].set(ylabel="Minimal error $\sigma$", title=title)  # add title if prefered
     min_err = error[np.argmin(abs(d_sol-opti))]  # minimal error
     axes[0].axhline(min_err, ls=":", c='k')  # indicate optimal error value
+    axes[0].minorticks_on()
     # add inset for closer look on error profiles
-    left, bottom, width, height = [0.6, 0.78, 0.3, 0.1]
-    inset = fig.add_axes([left, bottom, width, height])
+    inset = inset_axes(axes[0], width="45%", height="35%", loc='lower left',
+                       bbox_transform=axes[0].transAxes, bbox_to_anchor=(0.5, 0.5, 1, 1))
+    mark_inset(axes[0], inset, loc1=2, loc2=4, fc="none", ec="0.75", zorder=-10)
     inset.plot(d_sol, error, '.k-')
-    inset.set_ylim([min_err-0.05*min_err, min_err+0.25*min_err])
-    inset.set_xlim([opti-300, opti+300])
+    inset.set_ylim([axes[0].get_ylim()[0], min_err+0.25*min_err])
+    inset.set_xlim([axes[0].get_xlim()[0], opti+300])
+    inset.tick_params(axis='y', labelsize=6)
+    inset.tick_params(axis='x', labelsize=6)
     inset.axhline(min_err, ls=":", c='k')
     inset.axvline(opti, ls=":", c='k')
 
     # plot D_gel
     axes[1].plot(d_sol, d_gel, '.r-')
-    axes[1].axvline(opti, ls=':', c='r')
+    optimum = axes[1].axvline(opti, ls=':', c='r')
     axes[1].set(ylabel="$D_{\\text{gel}}$ [$\mu$m$^2$/s]")
     best_dgel = d_gel[np.argmin(abs(d_sol-opti))]  # best solution for D_Gel
     axes[1].axhline(best_dgel, ls=":", c='r')  # indicate optimal value
+    axes[1].minorticks_on()
 
     # plot free energy
     axes[2].plot(d_sol, f_gel, '.b-')
@@ -51,8 +59,9 @@ def figure_diffusivities(d_sol, d_gel, f_gel, error, opti, name='params_dsol',
                 ylabel="$F_{\\text{gel}}$ [$k_{\\text{B}}T$]")
     best_f = f_gel[np.argmin(abs(d_sol-opti))]  # best solution for dF
     axes[2].axhline(best_f, ls=":", c='b')  # indicate optimal value
+    axes[2].minorticks_on()
     # legend
-    axes[0].legend([optimum], ['optimum'])
+    axes[1].legend([optimum], ['optimum'], frameon=False, loc='center right')
     if scale is 'log':
         for ax in axes:  # setting log scale
             ax.set(yscale='log')
@@ -91,17 +100,18 @@ def read_data(path, diffusivities, sub_folder=''):
     Error = np.array(Error)[order]
 
     return D_sol, D_gel, F_gel, Error
+# %%
 ##########################################################################
 
 
 ################################
 #    SETTING UP ENVIRONMENT    #
 ##########################################################################
-setups = ['gel6_dex4', 'gel6_dex20', 'gel6_dex70', 'gel10_dex4', 'gel10_dex20', 'gel10_dex70']
-DSols_theo = [333.86, 89.55, 61.24, 219.97, 139.35, 0.62]  # fitted value for DSol for different setups
-diffusivities = {set: [1, 10, 50]+[d for d in range(100, 1000, 100)]+[d_theo]
+setups = ['gel10_dex40', 'gel6_dex40']
+DSols_theo = [51.1, 13.3]  # fitted value for DSol for different setups
+diffusivities = {set: [1, 50]+[d for d in range(100, 1001, 100)]+[d_theo]
                  for set, d_theo in zip(setups, DSols_theo)}
-path_d_data = home+"/Desktop/Cluster/jobs/fokkerPlanckModel/PEG_dextran/6.Batch_DSol_analysis/"
+path_d_data = home+"/Desktop/Cluster/jobs/fokker_planck_modelling/Block_PEG/dsol_error_d40/12.Batch/"
 ##########################################################################
 
 
