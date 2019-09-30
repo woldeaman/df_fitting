@@ -342,7 +342,7 @@ def figure_results(exp_data, gels, D_sol, D_gel, dF, save=False, dscale='linear'
 @mpltex.acs_decorator  # making acs-style figures
 def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=False, dscale='log',
                             xscale='log', savePath=None, locs_dLegend=['upper right', 'lower left', 'lower left'],
-                            name='DF_results', leg=True):
+                            m_dex_max=70, name='DF_results', yLims=[6, 300], leg=True):
     """Plot results in nice figure."""
     gel_styles = {6: 'o-', 10: 's-', 0: 's--', 20: '^-'}  # plotting styles for different gels
     meas_col = ['r', 'm', 'b', 'c']  # colors for different measurements
@@ -366,7 +366,7 @@ def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=Fa
                 dextrns = np.array([int(re.findall(r"\d+", dx)[0]) for dx in mes[g].keys()])
                 data = np.array(list(mes[g].values()))
                 if data.size > 0:
-                    ax.errorbar(dextrns[dextrns < 70], data[dextrns < 70, 0], data[dextrns < 70, 1],
+                    ax.errorbar(dextrns[dextrns < m_dex_max], data[dextrns < m_dex_max, 0], data[dextrns < m_dex_max, 1],
                                 fmt=col+gel_styles[g], mfc=mfcs)
                 ax.set_xticks([4, 10, 20, 40, 60, 70])
                 ax.set_ylabel(ylab)
@@ -376,14 +376,14 @@ def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=Fa
     exp_plt = axes[0].plot(exp_data[:, 0], exp_data[:, 1], 'k^-', zorder=10)
     frap_plt = axes[0].plot(FRAP_data[:, 0], FRAP_data[:, 1], 'k^-', mfc='white', zorder=10)
     # plot exponent -1 for D_gel ~ M_dex^-1 relation
-    m_dex = np.linspace(4, 40)
+    m_dex = np.linspace(4, m_dex_max)
     prop1 = axes[1].plot(m_dex, 100*m_dex**(-1/2), 'k:', zorder=10)
     prop2 = axes[1].plot(m_dex, 300*m_dex**(-1), 'k--', zorder=10)
     axes[0].plot(m_dex, 300*m_dex**(-1/2), 'k:', zorder=10)
     axes[0].plot(m_dex, 300*m_dex**(-1)*2.5, 'k--', zorder=10)
     proportional = [prop1, prop2]
     prop3 = axes[2].plot(m_dex, 0.03*m_dex+0.55, 'k--', zorder=10)
-    axes[0].set_ylim([6.5, 300])
+    axes[0].set_ylim(yLims)
 
     # setting diffusivity yscale
     for ax in axes[:-1]:
@@ -654,7 +654,7 @@ for g in gels:
                 avg[dex] = np.array([mes.mean(), mes.std()/np.sqrt(mes.size)])
 
 # computed bulk diffusivities accounting for FITCS D_sol
-exp_data[:-2, 0] = np.array([4, 10, 20, 40])
+exp_data[:-1, 0] = np.array([4, 10, 20, 40, 70])
 figure_results(exp_data[:-2, :], gels, D_sol, D_gel, dF, save=True, savePath=save_path,
                locs_dLegend=['upper right', 'upper right', 'lower left'])
 # log plot figure
@@ -666,8 +666,8 @@ figure_results(exp_data[:-2, :], gels, D_sol, D_gel, dF, save=True,
 # exp_data = np.loadtxt('/Users/woldeaman/Desktop/two_comp_fit.txt')
 FRAP_dat = np.loadtxt('/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/FCS_data/FRAP_data.txt')
 figure_results_combined(exp_data[:-2, :], FRAP_dat[:5, :], [6, 10], {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
-                        save=True, savePath=save_path, name='avg_data_log',
+                        save=True, savePath=save_path, name='avg_data_log', m_dex_max=40.1, yLims=[5, 300],
                         locs_dLegend=['lower left', 'upper left', 'lower left'])
-figure_results_combined(exp_data[:-2, :], FRAP_dat[:5, :], [6, 10], {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
+figure_results_combined(exp_data[:-1, :], FRAP_dat[:5, :], [6, 10], {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
                         save=True, savePath=save_path, name='avg_data', xscale='linear', dscale='linear',
                         locs_dLegend=['upper right', 'upper right', 'center right'])
