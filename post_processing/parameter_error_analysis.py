@@ -2,6 +2,7 @@
 """Analysis for permeabilty coefficients."""
 import numpy as np
 import pandas as pd
+import re
 import fitting_scripts.FPModel as fp
 import matplotlib.pyplot as plt
 import mpltex  # for acs style figures
@@ -11,32 +12,25 @@ import mpltex  # for acs style figures
 #  DEFINITIONS AND FUNCTIONS    #
 ##########################################################################
 # %%
-def read_data(path, gels, dextrans):
+def read_data(path, gel, dex):
     """
     Read fit results and concentration profiles from desired measurement.
     path        -   path to data
-    gels        -   list of molecular weight of gels [as string gel_#]
-    dextrans    -   dictionary of dextrans with gels as keys {gel_#: [dex_#1, dex_#2, ...]}
     """
-    results = {}   # storing data in dict
-    for gl in gels:
-        results[gl] = {}
-        for dex in dextrans[gl]:  # cycle through all analyses
-            results[gl][dex] = {}
-            data = pd.read_excel(f'{path}/{gl}_{dex}/results.xlsx')
-            # read and store from excel file
-            parameters = np.array([data['Averaged Results'][:5].values,
-                                   data['Standart Deviation'][:5].values])
-            # also save scalings, profiles and discretizations
-            scales = np.loadtxt(f'{path}/{gl}_{dex}/scalings_avg.txt', delimiter=',')[:, 2]
-            profiles = np.loadtxt(f'{path}/{gl}_{dex}/{gl}_{dex}.txt', delimiter=',')
-            xx, cc = profiles[:, 0], profiles[:, 1:]  # separate xx-vector and profiles
-            cc = fp.build_zero_profile(cc)  # build c(t=0) profile
-            dxx_dist, dxx_width = fp.discretization_Block(profiles[:, 0])  # get variable discretization
-            # store data in dictionary
-            for key, val in zip(['D_sol', 'D_gel', 'dF', 't_s', 'd_s', 'scalings', 'cc_exp', 'xx', 'dx_dist'],
-                                np.hsplit(parameters, 5)+[scales, cc, xx, dxx_dist]):
-                results[gl][dex][key] = val  # storing in dictionary for each dextran and gel
+    results = {}
+    data = pd.read_excel(f'{path}/results.xlsx')
+    # read and store from excel file
+    parameters = data['Averaged Results'][:6].values
+    # also save scalings, profiles and discretizations
+    scales = np.loadtxt(f'{path}/scalings_avg.txt', delimiter=',')[:, 2]
+    profiles = np.loadtxt(f'{path}/{gel}_{dex}.txt', delimiter=',')
+    xx, cc = profiles[:, 0], profiles[:, 1:]  # separate xx-vector and profiles
+    cc = fp.build_zero_profile(cc)  # build c(t=0) profile
+    dxx_dist, dxx_width = fp.discretization_Block(profiles[:, 0])  # get variable discretization
+    # store data in dictionary
+    for key, val in zip(['D_sol', 'D_gel', 'dF', 't_s', 'd_s', 'sigma', 'scalings', 'cc_exp', 'xx', 'dx_dist'],
+                        list(parameters)+[scales, cc, xx, dxx_dist]):
+        results[key] = val  # storing in dictionary for each dextran and gel
 
     return results
 
@@ -71,35 +65,86 @@ def compute_error(measurement, dt=10):
     return error
 
 
-def vary_parameters(p_key, p_values, measurement, dt=10):
+def parameter_sweep(p_key, p_values, measurement, dt=10):
     """
     Vary parameters and compute error to experimental profiles.
     p_key       -   name of parameter to vary
     p_values    -   parameter values to compute error for
     measurement -   dict of parameters for chosen measurement
     """
+    errors = []  # gather error values for all parameter values
     for p in p_values:
-        measurement[p_key] = p
+        mes = measurement.copy()
+        mes[p_key] = p  # change parameter
+        err = compute_error(mes, dt=dt)
+        errors.append(err)
 
-# def error_parameter_plot():
+    # return error for each parameter value
+    sweep_data = np.c_[p_values, errors]
+    return sweep_data
+
+
+@mpltex.acs_decorator  # making acs-style figures
+def error_parameter_plot(D_sol, D_sol_id, D_gel, D_gel_id, dF, dF_id, min_err,
+                         dex=None, gel=None, name=None, save=False):
+    """Make figure for parameter sweep."""
+    # format correct title
+    gel = int(re.findall(r'\d+', gel)[0])
+    dex = int(re.findall(r'\d+', dex)[0])
+    title = 'dPG-G%d\n$M_{\\text{dex}}$ = %d kDa' % (gel, dex)
+    # create figure
+    fig, axes = plt.subplots(1, 3, sharey=True)
+    for ax, dat, opt, err, cl, lbl in zip(axes, [D_sol, D_gel, dF], [D_sol_id, D_gel_id, dF_id], [min_err]*3, ['r', 'm', 'b'],
+                                          ['$D_\\text{sol}$ [$\\mu$m$^2$/s]', '$D_{\\text{gel}}$ [$\\mu$m$^2$/s]', '$\\Delta$F [k$_\\text{B}$T]']):
+        ax.plot(dat[:, 0], dat[:, 1], f'.-{cl}')
+        ax.axvline(opt, c=cl, ls=':')
+        ax.axhline(err, c=cl, ls=':')
+        ax.set(xlabel=lbl)  # add title if prefered
+        ax.minorticks_on()
+
+    fig.text(0.25, 0.8, title)
+    axes[0].set(ylabel="$\\sigma$")
+    width, height = fig.get_size_inches()
+    w_double = 7  # inch size for width of double column figure for ACS journals
+    fig.set_size_inches(w_double, height)  # double height because of two rows
+    fig.tight_layout()
+
+    if save:
+        plt.savefig(f"/Users/woldeaman/Desktop/{name}_gel{gel}_dex{dex}.pdf")
+    else:
+        plt.show()
 # %%
-
 ##########################################################################
+
 
 #################
 #  ENVIRONMENT  #
 ##########################################################################
 path = "/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/consisten_preprocessing/"
+# measured gel and dextran combinations
+measurements = {9: {'gel6': ['dex4', 'dex10', 'dex20', 'dex40']},
+                10: {'gel6': ['dex4', 'dex10', 'dex20', 'dex40', 'dex70'],
+                     'gel10': ['dex4', 'dex4_vol2', 'dex10', 'dex10_vol2',
+                               'dex20', 'dex20_vol2', 'dex40']},
+                11: {'gel10': ['dex4', 'dex10', 'dex20', 'dex40']},
+                12: {'gel6': ['dex10', 'dex20', 'dex40'],
+                     'gel10': ['dex10', 'dex40', 'dex70']}}
 ##########################################################################
+
 
 ###############
 #  MAIN LOOP  #
 ##########################################################################
-res = read_data(path+'/9.Batch/', ['gel6'], {'gel6': ['dex4', 'dex10', 'dex20', 'dex40']})
-res['gel6']['dex4']['D_sol']
-
-# TODO:
-# 1. read data for defined measurement
-# 2. select parameter to vary and compute error for each variation
-# 3. make plot of error over parameter variation
+for batch, val in measurements.items():  # loop through all measurements
+    for gel, dexs in val.items():
+        for dex in dexs:
+            # read data
+            res = read_data(f'{path}/{batch}.Batch/{gel}_{dex}/', gel, dex)
+            # sweep parameter values and compute erros
+            D_sol = parameter_sweep('D_sol', np.linspace(1, 500), res)
+            D_gel = parameter_sweep('D_gel', np.linspace(1, 500), res)
+            dF = parameter_sweep('dF', np.linspace(0, 7.5), res)
+            # make plots
+            error_parameter_plot(D_sol, res['D_sol'], D_gel, res['D_gel'], dF, res['dF'],
+                                 res['sigma'], dex=dex, gel=gel, name=f'{batch}.Batch', save=True)
 ##########################################################################
