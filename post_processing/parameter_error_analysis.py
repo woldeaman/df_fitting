@@ -110,7 +110,7 @@ def error_parameter_plot(D_sol, D_sol_id, D_gel, D_gel_id, dF, dF_id, min_err,
     fig.tight_layout()
 
     if save:
-        plt.savefig(f"/Users/woldeaman/Desktop/{name}_gel{gel}_dex{dex}.pdf")
+        plt.savefig(f"/Users/woldeaman/Desktop/{name}_gel{gel}_{dex}.pdf")
     else:
         plt.show()
 # %%
