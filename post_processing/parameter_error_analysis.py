@@ -90,8 +90,8 @@ def error_parameter_plot(D_sol, D_sol_id, D_gel, D_gel_id, dF, dF_id, min_err,
     """Make figure for parameter sweep."""
     # format correct title
     gel = int(re.findall(r'\d+', gel)[0])
-    dex = int(re.findall(r'\d+', dex)[0])
-    title = 'dPG-G%d\n$M_{\\text{dex}}$ = %d kDa' % (gel, dex)
+    dex_m = int(re.findall(r'\d+', dex)[0])
+    title = 'dPG-G%d\n$M_{\\text{dex}}$ = %d kDa' % (gel, dex_m)
     # create figure
     fig, axes = plt.subplots(1, 3, sharey=True)
     for ax, dat, opt, err, cl, lbl in zip(axes, [D_sol, D_gel, dF], [D_sol_id, D_gel_id, dF_id], [min_err]*3, ['r', 'm', 'b'],
