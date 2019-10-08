@@ -2,6 +2,7 @@
 """Analysis for permeabilty coefficients."""
 import numpy as np
 import pandas as pd
+import pickle
 import re
 import fitting_scripts.FPModel as fp
 import matplotlib.pyplot as plt
@@ -84,6 +85,31 @@ def parameter_sweep(p_key, p_values, measurement, dt=10):
     return sweep_data
 
 
+def determine_errobars(param, limit=0.5):
+    """
+    Determine confidence interval for parameters.
+    param   -   array containing parameter values and corresponding error values
+    limit   -   boundary
+    """
+    # determine the error boundaries
+    min_err, min_idx = param[:, 1].min(), param[:, 1].argmin()  # minimal error and index
+    err_lim = min_err + min_err*limit  # error limit
+    # get the boundaries
+    if min_idx == 0:  # catching edge cases
+        lower_lim = 0
+        min_idx = 1
+    else:
+        lower_lim = np.argmin(abs(param[:min_idx, 1]-err_lim))
+    if min_idx == param[:, 0].size-1:  # catching edge cases
+        upper_lim = -1
+    else:
+        upper_lim = np.argmin(abs(param[min_idx:, 1]-err_lim))
+    # determine parameter errors
+    param_errors = [param[:min_idx, 0][lower_lim], param[min_idx:, 0][upper_lim]]
+
+    return param_errors
+
+
 @mpltex.acs_decorator  # making acs-style figures
 def error_parameter_plot(D_sol, D_sol_id, D_gel, D_gel_id, dF, dF_id, min_err,
                          dex=None, gel=None, name=None, save=False):
@@ -129,22 +155,43 @@ measurements = {9: {'gel6': ['dex4', 'dex10', 'dex20', 'dex40']},
                 11: {'gel10': ['dex4', 'dex10', 'dex20', 'dex40']},
                 12: {'gel6': ['dex10', 'dex20', 'dex40'],
                      'gel10': ['dex10', 'dex40', 'dex70']}}
+D_sweep = np.linspace(1, 500)  # parameter values to sweep for diffusivities
+F_sweep = np.linspace(0, 7.5)  # parameter values to sweep for energies
 ##########################################################################
 
 
 ###############
 #  MAIN LOOP  #
 ##########################################################################
+err_bars = {}  # store errorbars for each measurement
 for batch, val in measurements.items():  # loop through all measurements
+    err_bars[batch] = {}  # store errorbars for each measurement
     for gel, dexs in val.items():
+        err_bars[batch][gel] = {}  # store errorbars for each measurement
         for dex in dexs:
+            err_bars[batch][gel][dex] = {}
             # read data
             res = read_data(f'{path}/{batch}.Batch/{gel}_{dex}/', gel, dex)
-            # sweep parameter values and compute erros
-            D_sol = parameter_sweep('D_sol', np.linspace(1, 500), res)
-            D_gel = parameter_sweep('D_gel', np.linspace(1, 500), res)
-            dF = parameter_sweep('dF', np.linspace(0, 7.5), res)
+            # sweep parameter values and compute errors
+            parameters = {}
+            for idx, limits in zip(['D_sol', 'D_gel', 'dF'], [D_sweep, D_sweep, F_sweep]):
+                parameters[idx] = parameter_sweep(idx, limits, res)
+                err_bars[batch][gel][dex][idx] = determine_errobars(parameters[idx], limit=0.5)
             # make plots
-            error_parameter_plot(D_sol, res['D_sol'], D_gel, res['D_gel'], dF, res['dF'],
-                                 res['sigma'], dex=dex, gel=gel, name=f'{batch}.Batch', save=True)
+            # error_parameter_plot(parameters['D_sol'], res['D_sol'], parameters['D_gel'], res['D_gel'],
+            #                      parameters['dF'], res['dF'], res['sigma'], dex=dex, gel=gel, name=f'{batch}.Batch',
+            #                      save=True)
+
+# average error bars over all measurements and store data
+D_sol, D_gel, dF = {}, {}, {}
+for gel in ['gel6', 'gel10']:
+    D_sol[gel], D_gel[gel], dF[gel] = {}, {}, {}
+    for dex in ['dex4', 'dex10', 'dex20', 'dex40', 'dex70']:
+        D_sol[gel][dex], D_gel[gel][dex], dF[gel][dex] = {}, {}, {}
+        for param, dat in zip(['D_sol', 'D_gel', 'dF'], [D_sol, D_gel, dF]):
+            data = np.array([err_bars[mes][gel][dex][param] for mes in [9, 10, 11, 12]
+                             if gel in measurements[mes].keys() and dex in measurements[mes][gel]])
+            dat[gel][dex] = np.average(data, 0)  # store averaged errors
+pickle.dump({'D_sol': D_sol, 'D_gel': D_gel, 'dF': dF},
+            open('post_processing/data_files/error_bars.pickle', 'wb'))
 ##########################################################################
