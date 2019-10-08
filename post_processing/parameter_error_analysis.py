@@ -127,6 +127,7 @@ def error_parameter_plot(D_sol, D_sol_id, D_gel, D_gel_id, dF, dF_id, min_err,
         ax.axhline(err, c=cl, ls=':')
         ax.set(xlabel=lbl)  # add title if prefered
         ax.minorticks_on()
+        ax.set_ylim([0, 0.3])
 
     fig.text(0.25, 0.8, title)
     axes[0].set(ylabel="$\\sigma$")
