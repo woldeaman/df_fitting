@@ -305,4 +305,6 @@ figure_profiles([xx_1, xx_2], [xticks_1, xticks_2], [cc_exp_1, cc_exp_2],
 figure_penetration([avg_bulk_theo_1, avg_bulk_theo_2], [avg_trans_theo_1, avg_trans_theo_2],
                    [avg_gel_theo_1, avg_gel_theo_2], [avg_gel_exp_1, avg_gel_exp_2], [avg_trans_exp_1, avg_trans_exp_2],
                    M_dex=[4, 40], save=True, savePath="/Users/woldeaman/Desktop/")
+
+# TODO: include figure for all results here...
 ##########################################################################

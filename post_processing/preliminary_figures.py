@@ -366,7 +366,7 @@ def figure_results_combined(exp_data, FRAP_data, gels, D_sol, D_gel, dF, save=Fa
                 dextrns = np.array([int(re.findall(r"\d+", dx)[0]) for dx in mes[g].keys()])
                 data = np.array(list(mes[g].values()))
                 if data.size > 0:
-                    ax.errorbar(dextrns[dextrns < m_dex_max], data[dextrns < m_dex_max, 0], data[dextrns < m_dex_max, 1],
+                    ax.errorbar(dextrns[dextrns < m_dex_max], data[dextrns < m_dex_max, 0], data[dextrns < m_dex_max, 1:],
                                 fmt=col+gel_styles[g], mfc=mfcs)
                 ax.set_xticks([4, 10, 20, 40, 60, 70])
                 ax.set_ylabel(ylab)
@@ -664,9 +664,20 @@ figure_results(exp_data[:-2, :], gels, D_sol, D_gel, dF, save=True,
                name='DF_results_log')
 # plot averaged data
 # exp_data = np.loadtxt('/Users/woldeaman/Desktop/two_comp_fit.txt')
+# exp_data = np.loadtxt('/Users/woldeaman/Desktop/two_comp_fit.txt')
+# TODO: incorporate into other files
+# NOTE: changing errorbars here according to more accurate estimation
+err_bars = np.load('post_processing/data_files/error_bars.pickle')
+for gel in gels:
+    for dex in [4, 10, 20, 40, 70]:
+        for dat, err in zip([avg_dsol, avg_dgel, avg_df], [err_bars['D_sol'], err_bars['D_gel'], err_bars['dF']]):
+            dat[gel][f'dex{dex}'] = np.array([dat[gel][f'dex{dex}'][0],
+                                              err[f'gel{gel}'][f'dex{dex}'][0],
+                                              err[f'gel{gel}'][f'dex{dex}'][1]])
+
 FRAP_dat = np.loadtxt('/Users/woldeaman/Nextcloud/PhD/Projects/FokkerPlanckModeling/PEG_Gel/FCS_data/FRAP_data.txt')
 figure_results_combined(exp_data[:-2, :], FRAP_dat[:5, :], [6, 10], {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
-                        save=True, savePath=save_path, name='avg_data_log', m_dex_max=40.1, yLims=[5, 300],
+                        save=True, savePath=save_path, name='avg_data_log', m_dex_max=70.1, yLims=[0.1, 400],
                         locs_dLegend=['lower left', 'upper left', 'lower left'])
 figure_results_combined(exp_data[:-1, :], FRAP_dat[:5, :], [6, 10], {1: avg_dsol}, {1: avg_dgel}, {1: avg_df},
                         save=True, savePath=save_path, name='avg_data', xscale='linear', dscale='linear',
