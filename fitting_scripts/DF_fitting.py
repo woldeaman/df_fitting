@@ -27,8 +27,8 @@ def save_data(xx, dxx_width, cc_scaled_best, cc_scaled_means, cc_theo_best, cc_t
     # header for txt file in which concentration profiles will be saved
     header_cons = ''
     for i, t in enumerate(tt_ext):
-        header_cons += ('column%i: c-profile [micro_M] for t_%i = %i min\n'
-                        % (i+2, i, int(t/60)))
+        header_cons += ('column%i: c-profile for t_%i = %i s\n'
+                        % (i+1, i, int(t)))
     # saving numerical profiles
     np.savetxt(savePath+'cc_theo_best.txt', cc_theo_best, delimiter=',',
                header='Numerically computed concentration profiles\n'+header_cons)
@@ -292,7 +292,7 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
     W_best = fp.WMatrixVar(D_best, F_best, start=4, end=None, deltaXX=dxx_dist, con=True)
     W_mean = fp.WMatrixVar(D_mean, F_mean, start=4, end=None, deltaXX=dxx_dist, con=True)
     # computing concentration profiles
-    tt_ext = np.append(tt[:-1], np.arange(tt[-1], tt[-1]*7))  # extend to long time limit
+    tt_ext = np.append(tt[:-1], np.arange(tt[-1], tt[-1]*7, 10))  # extend to long time limit
     cc_theo_best = np.array([fp.calcC(cc[0], (t-tt[0]), W=W_best) for t in tt_ext]).T
     cc_theo_mean = np.array([fp.calcC(cc[0], (t-tt[0]), W=W_mean) for t in tt_ext]).T
 
