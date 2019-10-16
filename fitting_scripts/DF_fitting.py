@@ -292,7 +292,8 @@ def analysis(result, xx, cc, tt, dxx_dist, dxx_width, alpha, crit_err):
     W_best = fp.WMatrixVar(D_best, F_best, start=4, end=None, deltaXX=dxx_dist, con=True)
     W_mean = fp.WMatrixVar(D_mean, F_mean, start=4, end=None, deltaXX=dxx_dist, con=True)
     # computing concentration profiles
-    tt_ext = np.append(tt[:-1], np.arange(tt[-1], tt[-1]*7, 10))  # extend to long time limit
+    dt = abs(tt[1]-tt[0])  # get temporal discretization
+    tt_ext = np.append(tt[:-1], np.arange(tt[-1], tt[-1]*7, dt))  # extend to long time limit
     cc_theo_best = np.array([fp.calcC(cc[0], (t-tt[0]), W=W_best) for t in tt_ext]).T
     cc_theo_mean = np.array([fp.calcC(cc[0], (t-tt[0]), W=W_mean) for t in tt_ext]).T
 
