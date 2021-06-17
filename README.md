@@ -1,4 +1,4 @@
-# Numerical Framework for Analysis of Experimental Concentration Profiles
+# Code for Analysis of Experimental Concentration Profiles
 
 Fit diffusivity and free energy landscapes from raw and noisy experimental concentration profiles.
 
