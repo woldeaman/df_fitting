@@ -5,6 +5,7 @@ Fit diffusivity and free energy landscapes from raw and noisy experimental conce
 # References
 
 This package was used in the following publication:
+
 [Wolde-Kidan et al., "Particle Diffusivity and Free-Energy Profiles in Hydrogels from Time-Resolved Penetration Data", Biophys. J. (2021)](https://www.sciencedirect.com/science/article/pii/S0006349521000011)
 
 Please read the paper for details and cite it if using any of this code.
